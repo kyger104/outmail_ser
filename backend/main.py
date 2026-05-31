@@ -1,12 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
+from pathlib import Path
 from database import init_db
 from scheduler import scheduler
 from routers import admin, emails, external_api_dual, api_keys, inbox
 from config import get_settings
 
 settings = get_settings()
+
+# 前端静态文件目录
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -49,14 +55,37 @@ app.include_router(external_api_dual.router)
 app.include_router(api_keys.router)
 app.include_router(inbox.router)
 
+# 挂载前端静态文件
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
 
 @app.get("/")
 def root():
+    """根路径返回前端页面"""
+    if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
+        return FileResponse(FRONTEND_DIST / "index.html")
     return {
         "message": "轻量级 IMAP 邮件托管系统",
         "version": "1.0.0",
         "docs": "/docs"
     }
+
+
+@app.get("/admin")
+def admin_page():
+    """管理后台页面"""
+    if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
+        return FileResponse(FRONTEND_DIST / "index.html")
+    return {"message": "请先构建前端"}
+
+
+@app.get("/inbox")
+def inbox_page():
+    """收件箱页面"""
+    if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
+        return FileResponse(FRONTEND_DIST / "index.html")
+    return {"message": "请先构建前端"}
 
 
 @app.get("/health")
