@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: imap-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/emails.db
+      - IMAP_SERVER=outlook.office365.com
+      - IMAP_PORT=993
+      - SYNC_INTERVAL=30
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - ENCRYPTION_KEY=change-this-to-a-secure-32-byte-key
+      - SECRET_KEY=change-this-to-a-secure-secret-key
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: imap-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  data:

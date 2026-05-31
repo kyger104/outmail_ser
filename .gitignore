@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# 数据库和日志
+data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# 环境配置
+.env
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+frontend/.vscode/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
