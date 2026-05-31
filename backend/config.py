@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # 服务器配置
     host: str = "0.0.0.0"
     port: int = 7892
+    log_level: str = "info"
 
     class Config:
         env_file = ".env"
