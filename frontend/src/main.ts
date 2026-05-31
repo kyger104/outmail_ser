@@ -10,7 +10,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/inbox'
+      component: Inbox
     },
     {
       path: '/inbox',

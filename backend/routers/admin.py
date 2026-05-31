@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 from database import get_db
 from models import Mailbox
+from utils.jwt_helper import JWTHelper
 from scheduler import scheduler
 from datetime import datetime
 
@@ -55,6 +56,14 @@ async def import_mailboxes(data: MailboxBatchImport, db: Session = Depends(get_d
                 status="active"
             )
             db.add(mailbox)
+            db.flush()
+
+            # 生成 JWT token
+            jwt_token = JWTHelper.generate_mailbox_token(
+                mailbox_id=mailbox.id,
+                email=mailbox.email
+            )
+            mailbox.jwt_token = jwt_token
             db.commit()
             db.refresh(mailbox)
 
@@ -100,6 +109,51 @@ async def delete_mailbox(mailbox_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "邮箱已删除"}
+
+
+@router.get("/mailboxes/links")
+def get_all_mailbox_links(db: Session = Depends(get_db)):
+    """获取所有邮箱的访问链接"""
+    mailboxes = db.query(Mailbox).all()
+    results = []
+    for mailbox in mailboxes:
+        if not mailbox.jwt_token:
+            jwt_token = JWTHelper.generate_mailbox_token(
+                mailbox_id=mailbox.id,
+                email=mailbox.email
+            )
+            mailbox.jwt_token = jwt_token
+        link = JWTHelper.generate_mailbox_url(mailbox.jwt_token)
+        results.append({
+            "id": mailbox.id,
+            "email": mailbox.email,
+            "link": link,
+            "status": mailbox.status
+        })
+    db.commit()
+    return {"items": results, "total": len(results)}
+
+
+@router.get("/mailboxes/{id}/link")
+def get_mailbox_link(id: int, db: Session = Depends(get_db)):
+    """获取单个邮箱的访问链接"""
+    mailbox = db.query(Mailbox).filter(Mailbox.id == id).first()
+    if not mailbox:
+        raise HTTPException(status_code=404, detail="邮箱不存在")
+    if not mailbox.jwt_token:
+        jwt_token = JWTHelper.generate_mailbox_token(
+            mailbox_id=mailbox.id,
+            email=mailbox.email
+        )
+        mailbox.jwt_token = jwt_token
+        db.commit()
+    link = JWTHelper.generate_mailbox_url(mailbox.jwt_token)
+    return {
+        "mailbox_id": mailbox.id,
+        "email": mailbox.email,
+        "jwt_token": mailbox.jwt_token,
+        "link": link
+    }
 
 
 @router.get("/mailboxes/{mailbox_id}", response_model=MailboxResponse)

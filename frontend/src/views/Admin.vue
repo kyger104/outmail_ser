@@ -8,17 +8,20 @@
     <div class="admin-content">
       <n-card title="批量导入邮箱" class="import-card">
         <n-form>
-          <n-form-item label="邮箱列表（每行一个，格式：邮箱,令牌）">
+          <n-form-item label="邮箱列表（每行一个，格式：邮箱:令牌）">
             <n-input
               v-model:value="importText"
               type="textarea"
-              placeholder="user1@outlook.com,app-password-1&#10;user2@hotmail.com,app-password-2"
+              placeholder="user1@outlook.com:app-password-1&#10;user2@hotmail.com:app-password-2"
               :rows="8"
             />
           </n-form-item>
           <n-space>
             <n-button type="primary" @click="handleImport" :loading="importing" attr-type="button">
               导入
+            </n-button>
+            <n-button type="primary" ghost @click="exportLinks" attr-type="button">
+              导出所有链接
             </n-button>
           </n-space>
         </n-form>
@@ -134,6 +137,19 @@ const columns = [
     }
   },
   {
+    title: '访问链接',
+    key: 'link',
+    width: 120,
+    render: (row: Mailbox) => {
+      return h(NButton, {
+        size: 'small',
+        type: 'primary',
+        ghost: true,
+        onClick: () => copyLink(row.id)
+      }, { default: () => '复制链接' })
+    }
+  },
+  {
     title: '最后同步',
     key: 'last_sync',
     render: (row: Mailbox) => row.last_sync ? format(new Date(row.last_sync), 'yyyy-MM-dd HH:mm:ss') : '-'
@@ -196,7 +212,7 @@ async function handleImport() {
     const lines = importText.value.trim().split('\n')
     const mailboxesList = lines
       .map(line => {
-        const [email, imap_token] = line.split(',').map(s => s.trim())
+        const [email, imap_token] = line.split(':').map(s => s.trim())
         return { email, imap_token }
       })
       .filter(m => m.email && m.imap_token)
@@ -251,6 +267,33 @@ function handleDelete(row: Mailbox) {
       }
     }
   })
+}
+
+async function copyLink(mailboxId: number) {
+  try {
+    const data = await api.get(`/admin/mailboxes/${mailboxId}/link`) as { link: string }
+    await navigator.clipboard.writeText(data.link)
+    message.success('链接已复制')
+  } catch {
+    message.error('获取链接失败')
+  }
+}
+
+async function exportLinks() {
+  try {
+    const data = await api.get('/admin/mailboxes/links') as { items: Array<{ email: string; link: string }> }
+    const csv = data.items.map(m => `${m.email},${m.link}`).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'mailbox_links.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+    message.success('导出成功')
+  } catch {
+    message.error('导出失败')
+  }
 }
 
 onMounted(loadMailboxes)

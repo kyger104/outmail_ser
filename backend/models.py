@@ -15,6 +15,7 @@ class Mailbox(Base):
     imap_server = Column(String(100), default="outlook.office365.com")
     imap_port = Column(Integer, default=993)
     status = Column(String(20), default="active")  # active/inactive/error
+    jwt_token = Column(String(500), nullable=True, unique=True, index=True)  # 邮箱专属 JWT
     last_sync = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

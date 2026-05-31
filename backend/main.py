@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import init_db
 from scheduler import scheduler
-from routers import admin, emails, external_api_dual, api_keys
+from routers import admin, emails, external_api_dual, api_keys, inbox
 from config import get_settings
 
 settings = get_settings()
@@ -47,6 +47,7 @@ app.include_router(admin.router)
 app.include_router(emails.router)
 app.include_router(external_api_dual.router)
 app.include_router(api_keys.router)
+app.include_router(inbox.router)
 
 
 @app.get("/")
