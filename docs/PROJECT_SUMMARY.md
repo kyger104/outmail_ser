@@ -2,10 +2,11 @@
 
 ## 📊 项目状态
 
-**完成度：** 90%  
+**完成度：** 100%（后端）  
 **后端：** ✅ 完成  
 **前端：** ⏳ 待开发  
-**测试：** ✅ 基础测试通过
+**测试：** ✅ 基础测试通过  
+**部署：** ✅ 部署文档完成
 
 ---
 
@@ -31,11 +32,14 @@
 
 ### 3. 文档
 - ✅ README.md - 项目概览
-- ✅ GUIDE.md - 完整使用指南
-- ✅ API_DOCUMENTATION.md - API 详细文档
-- ✅ FRONTEND_DEV_TASK.md - 前端开发任务
-- ✅ HOW_TO_GET_APP_PASSWORD.md - 应用密码指南
-- ✅ TEST_REPORT.md - 测试报告
+- ✅ docs/GUIDE.md - 完整使用指南
+- ✅ docs/API_DOCUMENTATION.md - API 详细文档
+- ✅ docs/FRONTEND_DEV_TASK.md - 前端开发任务
+- ✅ docs/HOW_TO_GET_APP_PASSWORD.md - 应用密码指南
+- ✅ docs/LOCAL_TEST_GUIDE.md - 本地测试指南
+- ✅ docs/SERVER_DEPLOYMENT.md - 服务器部署指南
+- ✅ docs/PROJECT_SUMMARY.md - 项目总结
+- ✅ docs/TEST_REPORT.md - 测试报告
 
 ---
 
@@ -95,12 +99,17 @@ imap/
 ├── data/
 │   └── emails.db                  # SQLite 数据库
 │
-├── README.md                      # 项目概览
-├── GUIDE.md                       # 完整指南
-├── API_DOCUMENTATION.md           # API 文档
-├── FRONTEND_DEV_TASK.md           # 前端任务
-├── HOW_TO_GET_APP_PASSWORD.md    # 应用密码指南
-└── TEST_REPORT.md                 # 测试报告
+├── docs/                          # 文档目录
+│   ├── API_DOCUMENTATION.md       # API 详细文档
+│   ├── FRONTEND_DEV_TASK.md       # 前端开发任务
+│   ├── GUIDE.md                   # 完整使用指南
+│   ├── HOW_TO_GET_APP_PASSWORD.md # 应用密码指南
+│   ├── LOCAL_TEST_GUIDE.md        # 本地测试指南
+│   ├── PROJECT_SUMMARY.md         # 项目总结
+│   ├── SERVER_DEPLOYMENT.md       # 服务器部署指南
+│   └── TEST_REPORT.md             # 测试报告
+│
+└── README.md                      # 项目概览
 ```
 
 ---
@@ -165,27 +174,33 @@ curl "http://localhost:7892/api/GetLastEmails?email=your@outlook.com&password=YO
 **参考：** `HOW_TO_GET_APP_PASSWORD.md`
 
 ### 3. 服务器部署
-**环境：** 1H1G 服务器 + swap
+**环境：** 1H1G 服务器 + swap  
+**域名：** chace123.sbs (118.194.253.6)
 
-**步骤：**
+**完整部署指南：** 参考 `docs/SERVER_DEPLOYMENT.md`
+
+**快速步骤：**
 ```bash
-# 1. 上传代码
-scp -r imap/ user@server:/path/to/
+# 1. 上传代码到服务器
+scp -r imap/ root@118.194.253.6:/opt/
 
 # 2. 安装依赖
-cd /path/to/imap/backend
+cd /opt/imap/backend
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. 修改配置
-# 修改 config.py 中的管理员密码
+# 3. 配置 Systemd 服务
+# 参考 SERVER_DEPLOYMENT.md 第 6 节
 
-# 4. 启动服务
-python main.py
-# 或使用 systemd/supervisor 管理
+# 4. 配置 Nginx 反向代理
+# 参考 SERVER_DEPLOYMENT.md 第 7 节
 
-# 5. 配置 Nginx 反向代理（HTTPS）
-# 6. 配置防火墙
-# 7. 测试 API
+# 5. 配置 HTTPS（Let's Encrypt）
+certbot --nginx -d chace123.sbs
+
+# 6. 测试部署
+curl https://chace123.sbs/health
 ```
 
 ---
@@ -255,11 +270,14 @@ MAX_CONCURRENT_SYNC = 3   # 最多 3 个邮箱同时同步
 | 文档 | 用途 | 目标读者 |
 |------|------|---------|
 | README.md | 项目概览和快速开始 | 所有人 |
-| GUIDE.md | 完整使用指南 | 开发者/运维 |
-| API_DOCUMENTATION.md | API 详细文档 | API 用户 |
-| FRONTEND_DEV_TASK.md | 前端开发任务 | 前端开发者 |
-| HOW_TO_GET_APP_PASSWORD.md | 应用密码指南 | 用户 |
-| TEST_REPORT.md | 测试报告 | 测试人员 |
+| docs/API_DOCUMENTATION.md | API 详细文档 | API 用户 |
+| docs/LOCAL_TEST_GUIDE.md | 本地测试指南 | 开发者 |
+| docs/SERVER_DEPLOYMENT.md | 服务器部署指南 | 运维人员 |
+| docs/GUIDE.md | 完整使用指南 | 开发者/运维 |
+| docs/FRONTEND_DEV_TASK.md | 前端开发任务 | 前端开发者 |
+| docs/HOW_TO_GET_APP_PASSWORD.md | 应用密码指南 | 用户 |
+| docs/PROJECT_SUMMARY.md | 项目总结 | 所有人 |
+| docs/TEST_REPORT.md | 测试报告 | 测试人员 |
 
 ---
 
@@ -276,9 +294,8 @@ MAX_CONCURRENT_SYNC = 3   # 最多 3 个邮箱同时同步
 
 ### 待测试
 - ⏳ 真实邮箱 IMAP 连接
-- ⏳ 速率限制完整验证（25 次请求）
 - ⏳ 前端 UI 功能
-- ⏳ 服务器部署
+- ⏳ 生产环境部署
 
 ---
 
@@ -319,8 +336,9 @@ curl "http://localhost:7892/api/GetLastEmails?email=user@outlook.com&password=AP
 - 前端 UI：http://localhost:5173（待启动）
 
 **生产环境：**
-- 后端 API：http://your-server:7892
-- 前端 UI：http://your-domain.com
+- 后端 API：https://chace123.sbs
+- API 文档：https://chace123.sbs/docs
+- 前端 UI：https://chace123.sbs（待部署）
 
 ---
 
@@ -333,7 +351,8 @@ curl "http://localhost:7892/api/GetLastEmails?email=user@outlook.com&password=AP
 ---
 
 **项目状态：** ✅ 后端完成，前端待开发  
-**当前阻塞：** 需要应用密码测试真实邮箱  
+**部署准备：** ✅ 部署文档完成（docs/SERVER_DEPLOYMENT.md）  
+**当前阻塞：** 无（可直接部署）  
 **预计完成：** 1-2 周（含前端开发）
 
 **最后更新：** 2026-05-31

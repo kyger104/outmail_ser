@@ -5,29 +5,32 @@
 一个轻量级邮件托管系统，支持：
 - **管理员面板** - 批量导入和管理 1000+ 邮箱
 - **用户面板** - 查看邮件列表和详情
-- **外部 API** - 供第三方调用获取邮件
+- **外部 API** - 供第三方调用获取邮件（支持 IMAP）
+- **API Key 白名单** - 速率限制 + 白名单无限制访问
 - **本地 + 服务器** - 支持 1H1G 服务器部署
 
 ---
 
 ## 🎯 当前状态
 
-### ✅ 已完成（90%）
+### ✅ 已完成（100% 后端）
 
 **后端功能：**
-- ✅ 数据库模型（Mailbox, Email, Attachment）
+- ✅ 数据库模型（Mailbox, Email, Attachment, APIKey）
 - ✅ IMAP 客户端（异步连接、邮件获取）
 - ✅ 自动同步调度器（30秒间隔）
 - ✅ 管理员 API（导入、查询、删除邮箱）
 - ✅ 邮件 API（列表、详情、标记已读）
 - ✅ 外部 API（实时获取邮件，支持 IMAP）
+- ✅ API Key 管理系统
+- ✅ 速率限制中间件（20次/分钟，白名单无限制）
 
 **前端框架：**
 - ✅ Vue 3 + TypeScript + Vite
 - ✅ Naive UI 组件库
 - ✅ 路由配置
 
-### ⚠️ 待完成（10%）
+### ⚠️ 待完成
 
 - ❌ Admin.vue - 管理员面板 UI
 - ❌ Inbox.vue - 用户邮件面板 UI
@@ -70,13 +73,28 @@ python test_imap_simple.py
 
 ```bash
 python main.py
-# 服务运行在 http://localhost:8000
+# 服务运行在 http://localhost:7892
 ```
 
-### 5. 测试 API
+### 5. 创建 API Key（白名单）
 
 ```bash
-curl "http://localhost:8000/api/GetLastEmails?email=vsqamnadrz@hotmail.com&password=YOUR_APP_PASSWORD&num=2&boxType=1"
+curl -X POST "http://localhost:7892/api/admin/api-keys" \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test-key","description":"测试用","rate_limit":0}'
+```
+
+### 6. 测试 API
+
+**无 API Key（速率限制 20次/分钟）：**
+```bash
+curl "http://localhost:7892/api/GetLastEmails?email=vsqamnadrz@hotmail.com&password=YOUR_APP_PASSWORD&num=2&boxType=1"
+```
+
+**带 API Key（无限制）：**
+```bash
+curl "http://localhost:7892/api/GetLastEmails?email=vsqamnadrz@hotmail.com&password=YOUR_APP_PASSWORD&num=2&boxType=1&api_key=sk_xxx"
 ```
 
 ---
@@ -92,6 +110,11 @@ curl "http://localhost:8000/api/GetLastEmails?email=vsqamnadrz@hotmail.com&passw
 - `password` (必填) - 应用密码
 - `num` (可选, 1-5, 默认1) - 获取数量
 - `boxType` (可选, 1或2, 默认1) - 1=收件箱, 2=垃圾箱
+- `api_key` (可选) - API Key（白名单用户无速率限制）
+
+**速率限制：**
+- 普通用户：20次/分钟（基于 IP）
+- 白名单用户：无限制（需要 API Key）
 
 **响应：**
 ```json
@@ -112,6 +135,23 @@ curl "http://localhost:8000/api/GetLastEmails?email=vsqamnadrz@hotmail.com&passw
   ]
 }
 ```
+
+### API Key 管理
+
+**创建 API Key：** `POST /api/admin/api-keys`（需要 Basic Auth）
+```bash
+curl -X POST "http://localhost:7892/api/admin/api-keys" \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test-key","rate_limit":0}'
+```
+
+**查看 API Key 列表：** `GET /api/admin/api-keys`
+```bash
+curl "http://localhost:7892/api/admin/api-keys" -u admin:admin123
+```
+
+**删除 API Key：** `DELETE /api/admin/api-keys/{id}`
 
 ### 管理员 API
 
@@ -151,15 +191,18 @@ backend/
 │   ├── token_manager.py   # OAuth2 令牌管理
 │   ├── microsoft_graph.py # Graph API 客户端
 │   └── imap_service.py    # IMAP 服务 ✨
+├── middleware/
+│   └── rate_limiter.py    # 速率限制中间件 ✨
 ├── routers/
 │   ├── admin.py           # 管理员 API
 │   ├── emails.py          # 邮件 API
-│   └── external_api_dual.py # 外部 API（IMAP）✨
-├── models.py              # 数据模型
+│   ├── external_api_dual.py # 外部 API（IMAP）✨
+│   └── api_keys.py        # API Key 管理 ✨
+├── models.py              # 数据模型（含 APIKey）
 ├── database.py            # 数据库连接
 ├── scheduler.py           # 同步调度器
-├── main.py                # FastAPI 主应用
-└── test_imap_simple.py    # IMAP 测试脚本
+├── config.py              # 配置（端口 7892）
+└── main.py                # FastAPI 主应用
 
 frontend/
 ├── src/
@@ -184,7 +227,7 @@ data/
 ```bash
 cd backend
 python main.py
-# http://localhost:8000
+# http://localhost:7892
 ```
 
 **前端：**
@@ -196,30 +239,33 @@ npm run dev
 
 ### 服务器部署（1H1G）
 
-**方案 1：Docker Compose（推荐）**
+**完整部署指南：** 参考 `docs/SERVER_DEPLOYMENT.md`
 
+**域名：** chace123.sbs (118.194.253.6)
+
+**快速步骤：**
 ```bash
-# 构建和启动
-docker-compose up -d
+# 1. 上传代码到服务器
+scp -r imap/ root@118.194.253.6:/opt/
 
-# 查看日志
-docker-compose logs -f
+# 2. 安装依赖
+cd /opt/imap/backend
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-# 停止
-docker-compose down
-```
-
-**方案 2：Systemd 服务**
-
-```bash
-# 启动后端
+# 3. 配置 Systemd 服务
+sudo systemctl enable imap-backend
 sudo systemctl start imap-backend
 
-# 查看状态
-sudo systemctl status imap-backend
+# 4. 配置 Nginx 反向代理
+# 参考 SERVER_DEPLOYMENT.md
 
-# 查看日志
-sudo journalctl -u imap-backend -f
+# 5. 配置 HTTPS（Let's Encrypt）
+certbot --nginx -d chace123.sbs
+
+# 6. 测试部署
+curl https://chace123.sbs/health
 ```
 
 ### 性能优化（1H1G 服务器）
@@ -307,8 +353,10 @@ MAX_EMAILS_PER_SYNC = 10  # 每次最多同步 10 封新邮件
 ## 📚 API 文档
 
 启动服务后访问：
-- **Swagger UI:** http://localhost:8000/docs
-- **ReDoc:** http://localhost:8000/redoc
+- **Swagger UI:** http://localhost:7892/docs
+- **ReDoc:** http://localhost:7892/redoc
+
+**完整 API 文档：** 参考 `docs/API_DOCUMENTATION.md`
 
 ---
 
@@ -322,6 +370,8 @@ MAX_EMAILS_PER_SYNC = 10  # 每次最多同步 10 封新邮件
 - [x] 邮件列表查询
 - [x] 邮件详情查看
 - [x] 外部 API 接口
+- [x] API Key 管理系统
+- [x] 速率限制中间件
 
 ### 待实现
 
@@ -342,21 +392,27 @@ python test_imap_simple.py
 # 启动后端
 python main.py
 
-# 测试 API
-curl "http://localhost:8000/api/GetLastEmails?email=test@outlook.com&password=APP_PASSWORD&num=2&boxType=1"
+# 创建 API Key
+curl -X POST "http://localhost:7892/api/admin/api-keys" \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test-key","rate_limit":0}'
+
+# 测试 API（无 API Key）
+curl "http://localhost:7892/api/GetLastEmails?email=test@outlook.com&password=APP_PASSWORD&num=2&boxType=1"
+
+# 测试 API（带 API Key）
+curl "http://localhost:7892/api/GetLastEmails?email=test@outlook.com&password=APP_PASSWORD&num=2&api_key=sk_xxx"
 
 # 查看 API 文档
-open http://localhost:8000/docs
+open http://localhost:7892/docs
 
 # 启动前端
 cd frontend && npm run dev
-
-# Docker 部署
-docker-compose up -d
 ```
 
 ---
 
-**项目状态：** 后端 90% | 前端 50% | 整体 70%  
-**当前阻塞：** 需要应用密码测试 IMAP  
+**项目状态：** 后端 100% | 前端 50% | 整体 75%  
+**部署准备：** ✅ 部署文档完成  
 **预计完成：** 1-2 周
