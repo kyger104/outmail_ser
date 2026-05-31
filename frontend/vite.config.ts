@@ -15,6 +15,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: true,
+    minify: false  // 暂时禁用压缩以便调试
   }
 })

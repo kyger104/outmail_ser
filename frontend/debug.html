@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMAP 邮件托管系统 - Debug</title>
+  <script>
+    // 全局错误捕获
+    window.addEventListener('error', function(e) {
+      document.body.innerHTML = '<div style="padding:20px;background:#fee;border:2px solid red;margin:20px;"><h2>JavaScript Error:</h2><pre>' + e.message + '\n\nFile: ' + e.filename + '\nLine: ' + e.lineno + '</pre></div>';
+      console.error('Global error:', e);
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      document.body.innerHTML += '<div style="padding:20px;background:#ffa;border:2px solid orange;margin:20px;"><h2>Promise Rejection:</h2><pre>' + e.reason + '</pre></div>';
+      console.error('Unhandled rejection:', e);
+    });
+
+    console.log('Debug mode enabled');
+  </script>
+  <script type="module" crossorigin src="/assets/index-5Pac6g5j.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DMfU_EMi.css">
+</head>
+<body>
+  <div id="app">
+    <div style="padding:20px;text-align:center;">
+      <h2>Loading...</h2>
+      <p>If you see this for more than 3 seconds, check the browser console (F12)</p>
+    </div>
+  </div>
+  <script>
+    setTimeout(function() {
+      if (document.getElementById('app').innerHTML.indexOf('Loading') > -1) {
+        document.getElementById('app').innerHTML = '<div style="padding:20px;background:#fee;border:2px solid red;margin:20px;"><h2>Vue App Failed to Mount</h2><p>Check browser console (F12) for errors</p></div>';
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
