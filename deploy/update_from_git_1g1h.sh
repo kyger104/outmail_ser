@@ -73,7 +73,7 @@ echo "==> 构建前端"
 cd "${APP_DIR}/frontend"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=384}"
 npm ci
-npm run build
+npm run build:server
 rsync -a --delete dist/ "${FRONTEND_DIR}/"
 
 echo "==> 刷新服务配置"

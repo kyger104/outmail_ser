@@ -65,7 +65,7 @@ sudo bash deploy/update_from_git_1g1h.sh
 1. `git fetch` + `git pull --ff-only`
 2. 备份 `/opt/imap/data/emails.db`
 3. 安装/更新 Python venv 依赖
-4. `npm ci` 并构建前端
+4. `npm ci` 并用 `npm run build:server` 构建前端
 5. 复制 `frontend/dist` 到 `/var/www/imap`
 6. `systemctl restart imap-backend`
 7. `nginx -t && systemctl reload nginx`
@@ -96,7 +96,7 @@ nginx -t
 
 - 默认使用 SQLite 和单 worker，不建议在 1 核 1G 上开启多 worker。
 - 默认 `SYNC_INTERVAL=300`，避免频繁 IMAP 同步占满 CPU/内存。
-- 前端构建可能占用较多内存；如果 `npm run build` 被系统杀死，先给服务器增加 1G swap 后重试。
+- 本地/CI 使用 `npm run build` 做类型检查和生产构建；1G1H 服务器更新脚本使用 `npm run build:server`，跳过 `vue-tsc` 以降低内存占用。
 - Nginx 只代理 `/api/`，不要写成 `/api`，否则 `/api-keys` 前端页面会被误转发到后端。
 - 不建议在生产 `.env` 中继续使用默认管理员密码或示例密钥。
 - 更新脚本使用 `git pull --ff-only`；如果服务器上有未提交本地改动，请先处理后再更新。
