@@ -1,8 +1,7 @@
 """
 API Key 管理路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -11,11 +10,9 @@ import secrets
 
 from database import get_db
 from models import APIKey
-from config import get_settings
+from auth import verify_admin
 
 router = APIRouter(prefix="/api/admin", tags=["API Key 管理"])
-security = HTTPBasic()
-settings = get_settings()
 
 
 # Pydantic 模型
@@ -48,24 +45,6 @@ class APIKeyResponse(BaseModel):
 class APIKeyListResponse(BaseModel):
     items: List[APIKeyResponse]
     total: int
-
-
-def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    """验证管理员身份"""
-    correct_username = secrets.compare_digest(
-        credentials.username, settings.admin_username
-    )
-    correct_password = secrets.compare_digest(
-        credentials.password, settings.admin_password
-    )
-
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
 
 
 def generate_api_key() -> str:

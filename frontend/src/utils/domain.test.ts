@@ -3,6 +3,24 @@ import { extractCode } from './extractCode'
 import { parseMailboxImport } from './importParser'
 import { rowsToCsv } from './exportCsv'
 import { formatRelativeDate } from './formatDate'
+import { coerceThemeMode, getStoredThemeMode, themeStorageKey } from './themePreference'
+import { buildBasicAuthHeader, getAdminCredentials, saveAdminCredentials } from './adminAuth'
+
+function createMemoryStorage(): Storage {
+  const values = new Map<string, string>()
+  return {
+    get length() {
+      return values.size
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(key) ?? null,
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key: string) => values.delete(key),
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    }
+  }
+}
 
 describe('extractCode', () => {
   it('extracts verification codes from mixed mail content', () => {
@@ -45,5 +63,35 @@ describe('formatRelativeDate', () => {
     expect(formatRelativeDate('2026-05-31T08:05:00+08:00', now)).toBe('08:05')
     expect(formatRelativeDate('2026-05-30T21:20:00+08:00', now)).toBe('昨天 21:20')
     expect(formatRelativeDate('2026-05-20T09:30:00+08:00', now)).toBe('2026/05/20')
+  })
+})
+
+describe('themePreference', () => {
+  it('normalizes persisted theme modes and ignores invalid values', () => {
+    expect(coerceThemeMode('dark')).toBe('dark')
+    expect(coerceThemeMode('light')).toBe('light')
+    expect(coerceThemeMode('auto')).toBe('auto')
+    expect(coerceThemeMode('blue')).toBe('auto')
+  })
+
+  it('reads the saved theme mode from storage', () => {
+    const storage = createMemoryStorage()
+
+    storage.setItem(themeStorageKey, 'dark')
+    expect(getStoredThemeMode(storage)).toBe('dark')
+
+    storage.setItem(themeStorageKey, 'unknown')
+    expect(getStoredThemeMode(storage)).toBe('auto')
+  })
+})
+
+describe('adminAuth', () => {
+  it('persists admin credentials in the provided storage and builds a Basic header', () => {
+    const storage = createMemoryStorage()
+
+    saveAdminCredentials({ username: 'admin', password: 'secret' }, storage)
+
+    expect(getAdminCredentials(storage)).toEqual({ username: 'admin', password: 'secret' })
+    expect(buildBasicAuthHeader({ username: 'admin', password: 'secret' })).toBe('Basic YWRtaW46c2VjcmV0')
   })
 })

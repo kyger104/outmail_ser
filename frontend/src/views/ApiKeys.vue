@@ -5,48 +5,15 @@
         <span class="kicker">API Keys</span>
         <h1>API Key 管理</h1>
         <p class="muted-copy">
-          使用管理员 Basic Auth 临时访问接口，凭据只保存在当前页面内存中。
+          使用当前控制台登录态管理外部调用凭据。
         </p>
       </div>
-      <button class="ghost-button" type="button" :disabled="!canUseAuth || loading" @click="loadKeys">
+      <button class="ghost-button" type="button" :disabled="loading" @click="loadKeys">
         {{ loading ? '加载中...' : '刷新列表' }}
       </button>
     </header>
 
     <section class="utility-grid">
-      <form class="shell-card form-panel" autocomplete="off" @submit.prevent="loadKeys">
-        <div class="panel-heading">
-          <h2>管理员认证</h2>
-          <p>不会写入 localStorage 或 sessionStorage。</p>
-        </div>
-
-        <label class="field-group">
-          <span class="field-label">用户名</span>
-          <input
-            v-model.trim="auth.username"
-            class="field-input"
-            autocomplete="off"
-            placeholder="admin"
-            type="text"
-          >
-        </label>
-
-        <label class="field-group">
-          <span class="field-label">密码</span>
-          <input
-            v-model="auth.password"
-            class="field-input"
-            autocomplete="new-password"
-            placeholder="管理员密码"
-            type="password"
-          >
-        </label>
-
-        <button class="action-button" type="submit" :disabled="!canUseAuth || loading">
-          {{ loading ? '验证并加载...' : '加载 API Keys' }}
-        </button>
-      </form>
-
       <form class="shell-card form-panel" @submit.prevent="createKey">
         <div class="panel-heading">
           <h2>创建 Key</h2>
@@ -110,7 +77,7 @@
       <div v-else-if="!keys.length" class="empty-panel">
         <div>
           <h3>暂无 API Key</h3>
-          <p>输入管理员认证后可创建并管理访问凭据。</p>
+          <p>创建一个 Key 后，外部服务可用它调用查询接口。</p>
         </div>
       </div>
 
@@ -172,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import api from '../utils/api'
 import { copyToClipboard } from '../utils/clipboard'
 import { formatDateTime } from '../utils/formatDate'
@@ -189,11 +156,6 @@ interface CreateApiKeyPayload {
   rate_limit: number
 }
 
-const auth = reactive({
-  username: '',
-  password: ''
-})
-
 const createForm = reactive({
   name: '',
   description: '',
@@ -209,16 +171,8 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const createdKey = ref<ApiKeyItem | null>(null)
 
-const canUseAuth = computed(() => auth.username.length > 0 && auth.password.length > 0)
-const canCreate = computed(() => canUseAuth.value && createForm.name.length > 0 && createForm.rate_limit >= 0)
+const canCreate = computed(() => createForm.name.length > 0 && createForm.rate_limit >= 0)
 const activeCount = computed(() => keys.value.filter((item) => item.is_active).length)
-
-function authConfig() {
-  return {
-    username: auth.username,
-    password: auth.password
-  }
-}
 
 function readError(error: unknown): string {
   const candidate = error as {
@@ -235,15 +189,11 @@ function clearFeedback() {
 }
 
 async function loadKeys() {
-  if (!canUseAuth.value) {
-    return
-  }
-
   loading.value = true
   clearFeedback()
 
   try {
-    const response = await api.get('/admin/api-keys', { auth: authConfig() }) as ApiKeyListResponse
+    const response = await api.get('/admin/api-keys') as ApiKeyListResponse
     keys.value = response.items
     total.value = response.total
     successMessage.value = 'API Key 列表已更新。'
@@ -272,7 +222,7 @@ async function createKey() {
   }
 
   try {
-    const response = await api.post('/admin/api-keys', payload, { auth: authConfig() }) as ApiKeyItem
+    const response = await api.post('/admin/api-keys', payload) as ApiKeyItem
     createdKey.value = response
     createForm.name = ''
     createForm.description = ''
@@ -293,8 +243,7 @@ async function toggleKey(item: ApiKeyItem) {
   try {
     const response = await api.put(
       `/admin/api-keys/${item.id}`,
-      { is_active: !item.is_active },
-      { auth: authConfig() }
+      { is_active: !item.is_active }
     ) as ApiKeyItem
     const index = keys.value.findIndex((key) => key.id === item.id)
     if (index >= 0) {
@@ -318,7 +267,7 @@ async function deleteKey(item: ApiKeyItem) {
   clearFeedback()
 
   try {
-    await api.delete(`/admin/api-keys/${item.id}`, { auth: authConfig() })
+    await api.delete(`/admin/api-keys/${item.id}`)
     keys.value = keys.value.filter((key) => key.id !== item.id)
     total.value = Math.max(0, total.value - 1)
     if (createdKey.value?.id === item.id) {
@@ -350,6 +299,8 @@ function maskKey(value: string): string {
 
   return `${value.slice(0, 7)}...${value.slice(-6)}`
 }
+
+onMounted(loadKeys)
 </script>
 
 <style scoped>

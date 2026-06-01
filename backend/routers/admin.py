@@ -10,8 +10,9 @@ from models import Mailbox, Email
 from utils.jwt_helper import JWTHelper
 from scheduler import scheduler
 from datetime import datetime
+from auth import verify_admin
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(verify_admin)])
 
 
 # Pydantic 模型

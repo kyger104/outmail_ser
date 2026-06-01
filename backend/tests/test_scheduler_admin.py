@@ -1,8 +1,12 @@
 import asyncio
+import base64
 import sys
 import unittest
 from pathlib import Path
 
+from fastapi import FastAPI
+from fastapi import Depends
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import sessionmaker
@@ -15,6 +19,8 @@ from models import Base, Mailbox
 from database import ensure_sqlite_schema
 from routers import admin
 from scheduler import EmailScheduler
+from auth import verify_admin
+from config import get_settings
 
 
 class SchedulerTests(unittest.IsolatedAsyncioTestCase):
@@ -35,6 +41,30 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
 
 
 class AdminImportTests(unittest.IsolatedAsyncioTestCase):
+    def test_admin_routes_require_basic_auth(self):
+        settings = get_settings()
+        original_username = settings.admin_username
+        original_password = settings.admin_password
+        settings.admin_username = "admin"
+        settings.admin_password = "secret"
+
+        app = FastAPI()
+        app.get("/api/admin/probe", dependencies=[Depends(verify_admin)])(lambda: {"ok": True})
+
+        client = TestClient(app)
+        try:
+            unauthenticated = client.get("/api/admin/probe")
+            self.assertEqual(unauthenticated.status_code, 401)
+
+            authenticated = client.get(
+                "/api/admin/probe",
+                headers={"Authorization": f"Basic {base64.b64encode(b'admin:secret').decode()}"}
+            )
+            self.assertEqual(authenticated.status_code, 200)
+        finally:
+            settings.admin_username = original_username
+            settings.admin_password = original_password
+
     def test_sqlite_migration_adds_jwt_token_to_existing_mailboxes_table(self):
         engine = create_engine("sqlite:///:memory:")
         with engine.begin() as connection:

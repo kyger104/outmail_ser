@@ -9,17 +9,23 @@ import {
   Home,
   Inbox,
   KeyRound,
+  LogOut,
   Mail,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   RefreshCw,
   Settings,
+  Sun,
   Upload,
   X
 } from '@lucide/vue'
 import api from '../utils/api'
+import { clearAdminCredentials } from '../utils/adminAuth'
+import { useThemeControls } from '../composables/useThemeControls'
 import type { AdminStats } from '../types'
+import type { ThemeMode } from '../utils/themePreference'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +34,7 @@ const mobileOpen = ref(false)
 const health = ref<'checking' | 'ok' | 'error'>('checking')
 const mailboxCount = ref(0)
 const errorCount = ref(0)
+const { themeMode, resolvedTheme, setThemeMode } = useThemeControls()
 
 const navItems = [
   { name: 'Dashboard', label: '控制台', path: '/', icon: Home },
@@ -44,6 +51,10 @@ const statusLabel = computed(() => {
   if (health.value === 'error') return '后端异常'
   return '检查连接'
 })
+const themeLabel = computed(() => {
+  if (themeMode.value === 'auto') return resolvedTheme.value === 'dark' ? '跟随系统：深色' : '跟随系统：浅色'
+  return themeMode.value === 'dark' ? '深色模式' : '浅色模式'
+})
 
 function setCollapsed(value: boolean) {
   collapsed.value = value
@@ -53,6 +64,16 @@ function setCollapsed(value: boolean) {
 function openPath(path: string) {
   mobileOpen.value = false
   router.push(path)
+}
+
+function toggleThemeMode() {
+  const nextMode: ThemeMode = resolvedTheme.value === 'dark' ? 'light' : 'dark'
+  setThemeMode(nextMode)
+}
+
+function logout() {
+  clearAdminCredentials()
+  router.replace({ name: 'Login' })
 }
 
 async function refreshShell() {
@@ -141,6 +162,13 @@ onMounted(() => {
             <Activity :size="14" />
             <span>{{ statusLabel }}</span>
           </div>
+          <button class="theme-toggle" type="button" :title="themeLabel" :aria-label="themeLabel" @click="toggleThemeMode">
+            <component :is="resolvedTheme === 'dark' ? Sun : Moon" :size="17" />
+            <span class="desktop-only">{{ resolvedTheme === 'dark' ? '浅色' : '深色' }}</span>
+          </button>
+          <button class="topbar-icon" type="button" title="退出登录" aria-label="退出登录" @click="logout">
+            <LogOut :size="17" />
+          </button>
           <button class="ghost-button desktop-only" type="button" @click="openPath('/admin')">
             <Inbox :size="16" />
             <span>邮箱列表</span>
@@ -231,12 +259,13 @@ onMounted(() => {
 
 .brand-mark,
 .topbar-icon,
-.sidebar-toggle {
+.sidebar-toggle,
+.theme-toggle {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border-strong);
-  background: rgba(70, 194, 255, 0.08);
+  background: var(--bg-accent-soft);
   color: var(--accent);
   display: grid;
   place-items: center;
@@ -383,6 +412,16 @@ onMounted(() => {
   border-color: rgba(255, 107, 122, 0.2);
   background: rgba(255, 107, 122, 0.08);
   color: var(--danger);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  width: auto;
+  min-width: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-weight: 700;
 }
 
 .mobile-only {
