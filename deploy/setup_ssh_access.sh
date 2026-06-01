@@ -3,7 +3,7 @@
 
 SERVER="118.194.253.6"
 USER="ubuntu"
-PASSWORD="Aa121314"
+PASSWORD="CHANGE_ME_PASSWORD"
 
 echo "正在配置SSH密钥到服务器..."
 

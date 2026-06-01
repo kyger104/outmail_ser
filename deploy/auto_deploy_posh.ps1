@@ -8,7 +8,7 @@ Write-Host ""
 
 $server = "118.194.253.6"
 $username = "root"
-$password = ConvertTo-SecureString "Aa121314" -AsPlainText -Force
+$password = ConvertTo-SecureString "CHANGE_ME_PASSWORD" -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential($username, $password)
 
 # 部署命令
@@ -100,7 +100,7 @@ try {
     Write-Host "请手动执行以下步骤：" -ForegroundColor Yellow
     Write-Host "1. 打开 PowerShell 或 CMD" -ForegroundColor White
     Write-Host "2. 执行: ssh root@118.194.253.6" -ForegroundColor White
-    Write-Host "3. 输入密码: Aa121314" -ForegroundColor White
+    Write-Host "3. 输入密码: CHANGE_ME_PASSWORD" -ForegroundColor White
     Write-Host "4. 复制粘贴 DEPLOY_QUICK.md 中的部署命令" -ForegroundColor White
 }
 

@@ -2,7 +2,7 @@
 
 $SERVER = "118.194.253.6"
 $USER = "ubuntu"
-$PASSWORD = "Aa121314"
+$PASSWORD = "CHANGE_ME_PASSWORD"
 $PUBLIC_KEY = Get-Content "$env:USERPROFILE\.ssh\id_rsa.pub"
 
 Write-Host "正在配置SSH密钥到服务器..." -ForegroundColor Cyan

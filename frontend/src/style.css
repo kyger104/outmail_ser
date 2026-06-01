@@ -1,0 +1,312 @@
+:root {
+  color-scheme: dark;
+  --bg-base: #08111a;
+  --bg-panel: rgba(16, 27, 41, 0.92);
+  --bg-panel-strong: #101b29;
+  --bg-panel-soft: #142234;
+  --bg-panel-muted: #0c1724;
+  --bg-hover: rgba(70, 194, 255, 0.08);
+  --bg-accent-soft: rgba(70, 194, 255, 0.1);
+  --border-soft: #1b2b3d;
+  --border-strong: #22344a;
+  --border-accent: rgba(70, 194, 255, 0.3);
+  --text-strong: #ecf6ff;
+  --text-main: #b7ccdf;
+  --text-muted: #7d95aa;
+  --text-faint: #5e768e;
+  --accent: #46c2ff;
+  --accent-strong: #1b9fff;
+  --accent-warm: #f7b955;
+  --success: #39d98a;
+  --danger: #ff6b7a;
+  --warning: #f7b955;
+  --shadow-panel: 0 24px 60px rgba(3, 10, 18, 0.35);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --shell-max: 1480px;
+  --sidebar-width: 286px;
+  --sidebar-collapsed: 82px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(70, 194, 255, 0.18), transparent 26%),
+    radial-gradient(circle at top right, rgba(247, 185, 85, 0.12), transparent 24%),
+    linear-gradient(180deg, #09111b 0%, #08111a 40%, #071018 100%);
+}
+
+body {
+  margin: 0;
+  color: var(--text-main);
+  background: transparent;
+  font-family: Aptos, 'Segoe UI Variable', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 92%);
+  opacity: 0.4;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(125, 149, 170, 0.35);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(125, 149, 170, 0.55);
+}
+
+.page-shell {
+  width: min(100%, var(--shell-max));
+  margin: 0 auto;
+}
+
+.surface-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(18px);
+}
+
+.shell-card {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(16, 27, 41, 0.96), rgba(11, 20, 31, 0.98));
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-panel);
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(70, 194, 255, 0.18);
+  background: rgba(70, 194, 255, 0.08);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.muted-copy {
+  color: var(--text-muted);
+}
+
+.action-button,
+.ghost-button,
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.action-button {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #04111d;
+  font-weight: 700;
+}
+
+.ghost-button {
+  background: rgba(16, 27, 41, 0.78);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+}
+
+.danger-button {
+  background: rgba(255, 107, 122, 0.08);
+  border-color: rgba(255, 107, 122, 0.2);
+  color: var(--danger);
+}
+
+.action-button:hover,
+.ghost-button:hover,
+.danger-button:hover {
+  transform: translateY(-1px);
+}
+
+.ghost-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-accent);
+  color: var(--text-strong);
+}
+
+.stat-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 142px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(160deg, rgba(20, 34, 52, 0.95), rgba(10, 18, 28, 0.95));
+}
+
+.metric-value {
+  color: var(--text-strong);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metric-meta {
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.status-badge,
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-badge--success {
+  background: rgba(57, 217, 138, 0.12);
+  color: var(--success);
+}
+
+.status-badge--danger {
+  background: rgba(255, 107, 122, 0.12);
+  color: var(--danger);
+}
+
+.status-badge--warning {
+  background: rgba(247, 185, 85, 0.12);
+  color: var(--warning);
+}
+
+.tag-chip {
+  background: rgba(247, 185, 85, 0.12);
+  border: 1px solid rgba(247, 185, 85, 0.22);
+  color: var(--accent-warm);
+}
+
+.empty-panel {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 28px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.field-label {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field-input,
+.field-textarea,
+.field-select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: rgba(12, 23, 36, 0.92);
+  color: var(--text-strong);
+}
+
+.field-input,
+.field-select {
+  min-height: 46px;
+  padding: 0 14px;
+}
+
+.field-textarea {
+  min-height: 220px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.field-input:focus,
+.field-textarea:focus,
+.field-select:focus {
+  outline: none;
+  border-color: rgba(70, 194, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(70, 194, 255, 0.12);
+}
+
+@media (max-width: 1180px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}

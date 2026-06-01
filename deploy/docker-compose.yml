@@ -3,38 +3,57 @@ version: '3.8'
 services:
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
     container_name: imap-backend
     ports:
-      - "8000:8000"
+      - "7892:7892"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7892", "--workers", "1"]
     environment:
-      - DATABASE_URL=sqlite:////app/data/emails.db
-      - IMAP_SERVER=outlook.office365.com
-      - IMAP_PORT=993
-      - SYNC_INTERVAL=30
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin123
-      - ENCRYPTION_KEY=change-this-to-a-secure-32-byte-key
-      - SECRET_KEY=change-this-to-a-secure-secret-key
-      - HOST=0.0.0.0
-      - PORT=8000
+      DATABASE_URL: sqlite:////app/data/emails.db
+      IMAP_SERVER: outlook.office365.com
+      IMAP_PORT: "993"
+      SYNC_INTERVAL: "300"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in your shell or .env}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in your shell or .env}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in your shell or .env}
+      HOST: 0.0.0.0
+      PORT: "7892"
     volumes:
-      - ./data:/app/data
+      - ../data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7892/health', timeout=5).read()"]
+      interval: 60s
       timeout: 10s
       retries: 3
+      start_period: 20s
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
+    image: nginx:alpine
     container_name: imap-frontend
     ports:
       - "80:80"
+    volumes:
+      - ../frontend/dist:/usr/share/nginx/html:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/nginx/conf.d/default.conf <<'EOF'
+        server {
+            listen 80;
+            server_name _;
+            root /usr/share/nginx/html;
+            index index.html;
+            location / { try_files $$uri $$uri/ /index.html; }
+            location /api { proxy_pass http://backend:7892; proxy_set_header Host $$host; proxy_set_header X-Real-IP $$remote_addr; proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $$scheme; }
+            location /docs { proxy_pass http://backend:7892; proxy_set_header Host $$host; proxy_set_header X-Real-IP $$remote_addr; proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $$scheme; }
+            location /openapi.json { proxy_pass http://backend:7892; proxy_set_header Host $$host; proxy_set_header X-Real-IP $$remote_addr; proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $$scheme; }
+        }
+        EOF
+        nginx -g 'daemon off;'
     depends_on:
       - backend
     restart: unless-stopped

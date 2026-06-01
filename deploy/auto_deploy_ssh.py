@@ -9,7 +9,7 @@ import sys
 HOST = "118.194.253.6"
 PORT = 22
 USERNAME = "root"
-PASSWORD = "Aa121314"
+PASSWORD = "CHANGE_ME_PASSWORD"
 
 # 部署命令
 DEPLOY_COMMANDS = """

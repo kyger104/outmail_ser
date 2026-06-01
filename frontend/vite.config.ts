@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
+      '/api/': {
         target: 'http://localhost:7892',
         changeOrigin: true
       }
@@ -15,7 +15,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: true,
-    minify: false  // 暂时禁用压缩以便调试
+    sourcemap: false,
+    minify: 'esbuild'
   }
 })

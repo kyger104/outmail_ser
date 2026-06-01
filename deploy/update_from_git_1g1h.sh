@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/kyger104/outmail_ser.git}"
 APP_DIR="${APP_DIR:-/opt/imap}"
 FRONTEND_DIR="${FRONTEND_DIR:-/var/www/imap}"
 LOG_DIR="${LOG_DIR:-/var/log/imap-backend}"
@@ -14,45 +13,33 @@ if [ "${EUID}" -ne 0 ]; then
     exit 1
 fi
 
-echo "==> 安装系统依赖"
-apt-get update
-apt-get install -y git python3 python3-pip python3-venv nginx curl ca-certificates rsync openssl
-
-if ! command -v node >/dev/null 2>&1; then
-    echo "==> 安装 Node.js 20"
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
-fi
-
-echo "==> 准备代码目录: ${APP_DIR}"
-if [ ! -d "${APP_DIR}/.git" ]; then
-    mkdir -p "$(dirname "${APP_DIR}")"
-    if [ -d "${APP_DIR}" ] && [ "$(find "${APP_DIR}" -mindepth 1 -maxdepth 1 | head -n 1)" ]; then
-        backup_dir="${APP_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
-        echo "==> 检测到已有非 git 目录，备份到: ${backup_dir}"
-        mv "${APP_DIR}" "${backup_dir}"
-        git clone --branch "${BRANCH}" "${REPO_URL}" "${APP_DIR}"
-        if [ -d "${backup_dir}/data" ]; then
-            rm -rf "${APP_DIR}/data"
-            cp -a "${backup_dir}/data" "${APP_DIR}/data"
-        fi
-        if [ -f "${backup_dir}/backend/.env" ]; then
-            cp -a "${backup_dir}/backend/.env" "${APP_DIR}/backend/.env"
-        fi
-    else
-        git clone --branch "${BRANCH}" "${REPO_URL}" "${APP_DIR}"
-    fi
-fi
-
 cd "${APP_DIR}"
 git config --global --add safe.directory "${APP_DIR}" || true
+
+if [ ! -d .git ]; then
+    echo "${APP_DIR} 不是 git 工作副本，请先运行 deploy/deploy.sh 完成首次部署"
+    exit 1
+fi
+
+echo "==> 拉取代码"
 git fetch origin "${BRANCH}"
 git checkout "${BRANCH}"
 git pull --ff-only origin "${BRANCH}"
 
 mkdir -p "${APP_DIR}/data" "${FRONTEND_DIR}" "${LOG_DIR}"
 
-echo "==> 准备后端 venv"
+if ! command -v rsync >/dev/null 2>&1; then
+    apt-get update
+    apt-get install -y rsync
+fi
+
+if [ -f "${APP_DIR}/data/emails.db" ]; then
+    backup="${APP_DIR}/data/emails.db.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "${APP_DIR}/data/emails.db" "${backup}"
+    echo "==> 已备份数据库: ${backup}"
+fi
+
+echo "==> 更新后端依赖"
 cd "${APP_DIR}/backend"
 if [ ! -d .venv ]; then
     python3 -m venv .venv
@@ -62,7 +49,6 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
 if [ ! -f .env ]; then
-    echo "==> 生成 backend/.env，请部署后修改管理员密码"
     cat > .env <<EOF
 DATABASE_URL=sqlite:///${APP_DIR}/data/emails.db
 IMAP_SERVER=outlook.office365.com
@@ -90,7 +76,7 @@ npm ci
 npm run build
 rsync -a --delete dist/ "${FRONTEND_DIR}/"
 
-echo "==> 安装 systemd 和 Nginx 配置"
+echo "==> 刷新服务配置"
 install -m 0644 "${APP_DIR}/deploy/imap-backend.service" /etc/systemd/system/imap-backend.service
 if [ ! -f /etc/nginx/sites-available/imap ]; then
     install -m 0644 "${APP_DIR}/deploy/nginx.conf" /etc/nginx/sites-available/imap
@@ -108,7 +94,6 @@ if [ -f "${APP_DIR}/backend/.env" ]; then
 fi
 
 systemctl daemon-reload
-systemctl enable imap-backend
 systemctl restart imap-backend
 nginx -t
 systemctl reload nginx
@@ -117,9 +102,5 @@ echo "==> 健康检查"
 sleep 3
 curl -fsS http://127.0.0.1:7892/health
 echo
-
-echo "部署完成"
-echo "应用目录: ${APP_DIR}"
-echo "前端目录: ${FRONTEND_DIR}"
-echo "后端配置: ${APP_DIR}/backend/.env"
-echo "请确认已修改 ADMIN_PASSWORD、SECRET_KEY、ENCRYPTION_KEY。"
+systemctl is-active imap-backend
+echo "更新完成"

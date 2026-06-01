@@ -4,7 +4,7 @@ import time
 
 HOST = "118.194.253.6"
 USER = "root"
-PASSWORD = "Aa121314"
+PASSWORD = "CHANGE_ME_PASSWORD"
 
 commands = [
     ("拉取最新代码", "cd /opt/imap && git pull origin main"),

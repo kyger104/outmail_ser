@@ -8,7 +8,7 @@ import sys
 HOST = "118.194.253.6"
 PORT = 22
 USERNAME = "root"
-PASSWORD = "Aa121314"
+PASSWORD = "CHANGE_ME_PASSWORD"
 
 def execute_command(client, command, wait_time=2):
     """执行命令并返回输出"""

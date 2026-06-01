@@ -1,150 +1,102 @@
-# 🚀 一键部署命令
+# 1G1H Ubuntu 快速部署
 
-## 服务器信息
-- IP: 118.194.253.6
-- 用户: root
-- 密码: Aa121314
+适用场景：1 核 1G Ubuntu 服务器，代码通过 GitHub 仓库 `kyger104/outmail_ser` 拉取到服务器，本地只维护部署文件和说明。
 
----
+## 连接方式
 
-## 快速部署（复制粘贴执行）
-
-### 第一步：SSH 连接服务器
+不要在文档或脚本中保存服务器密码。建议在本机生成 SSH key，并把公钥加入服务器：
 
 ```bash
-ssh root@118.194.253.6
+ssh-keygen -t ed25519 -C "imap-deploy"
+ssh-copy-id -i ~/.ssh/id_ed25519.pub ubuntu@YOUR_SERVER_IP
+ssh -i ~/.ssh/id_ed25519 ubuntu@YOUR_SERVER_IP
 ```
 
-输入密码：`Aa121314`
+如果服务器禁用了 `ssh-copy-id`，手动把 `~/.ssh/id_ed25519.pub` 的内容追加到服务器的 `~/.ssh/authorized_keys`。
 
----
+## 首次部署
 
-### 第二步：执行部署（一次性复制整段）
-
-```bash
-cd /opt/imap && \
-git pull origin main && \
-echo "✓ 代码已更新" && \
-cp data/emails.db data/emails.db.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || echo "✓ 数据库备份（首次运行可能无文件）" && \
-cd backend && \
-source .venv/bin/activate && \
-pip install -r requirements.txt -q && \
-echo "✓ 依赖已安装" && \
-systemctl restart imap-backend && \
-echo "✓ 服务已重启" && \
-sleep 3 && \
-systemctl is-active imap-backend && \
-echo "" && \
-echo "========================================" && \
-echo "测试 API:" && \
-curl -s http://127.0.0.1:7892/health && \
-echo "" && \
-echo "========================================" && \
-echo "✅ 部署完成！" && \
-echo "========================================" && \
-echo "" && \
-echo "访问地址：" && \
-echo "- 管理后台：https://chace123.sbs/admin" && \
-echo "- API 文档：https://chace123.sbs/docs" && \
-echo "- 收件箱：https://chace123.sbs/inbox"
-```
-
----
-
-## 验证部署
-
-### 1. 检查服务状态
-```bash
-systemctl status imap-backend
-```
-
-应该看到 `Active: active (running)`
-
-### 2. 查看日志
-```bash
-journalctl -u imap-backend -n 30 --no-pager
-```
-
-### 3. 测试 API
-```bash
-curl http://127.0.0.1:7892/health
-curl http://127.0.0.1:7892/docs
-```
-
----
-
-## 浏览器测试
-
-1. **API 文档**: https://chace123.sbs/docs
-2. **管理后台**: https://chace123.sbs/admin
-3. **收件箱**: https://chace123.sbs/inbox
-
----
-
-## 如果遇到问题
-
-### 问题 1: 服务启动失败
-```bash
-# 查看详细错误
-journalctl -u imap-backend -n 50
-
-# 检查端口
-netstat -tlnp | grep 7892
-
-# 手动启动测试
-cd /opt/imap/backend
-source .venv/bin/activate
-python main.py
-```
-
-### 问题 2: 403 错误
-```bash
-# 检查 Nginx 配置
-cat /etc/nginx/sites-enabled/imap
-
-# 检查 Nginx 日志
-tail -50 /var/log/nginx/error.log
-
-# 重启 Nginx
-systemctl restart nginx
-```
-
-### 问题 3: 前端页面空白
-```bash
-# 检查前端文件
-ls -la /var/www/imap/
-
-# 如果需要重新构建前端
-cd /opt/imap/frontend
-npm install
-npm run build
-cp -r dist/* /var/www/imap/
-```
-
----
-
-## 回滚方案
-
-如果部署出现问题：
+在服务器上执行：
 
 ```bash
-# 停止服务
-systemctl stop imap-backend
-
-# 回滚代码
+apt-get update
+apt-get install -y git
+git clone https://github.com/kyger104/outmail_ser.git /opt/imap
 cd /opt/imap
-git reset --hard HEAD~1
-
-# 恢复数据库（找到最新备份）
-ls -lt data/emails.db.backup.*
-cp data/emails.db.backup.YYYYMMDD_HHMMSS data/emails.db
-
-# 重启服务
-systemctl start imap-backend
+sudo bash deploy/deploy.sh
 ```
 
----
+如果 `/opt/imap` 已经存在但不是 git 仓库，`deploy.sh` 会先把旧目录备份为 `/opt/imap.backup.YYYYmmdd_HHMMSS`，再 clone 仓库，并自动保留旧目录中的 `data/` 和 `backend/.env`。
 
-**预计时间：** 3-5 分钟  
-**风险等级：** 低（已备份数据库）  
-**需要重启：** 是（约 3 秒中断）
+脚本会完成：
+
+- 安装 Python venv、Node.js/npm、Nginx、curl 等依赖
+- 创建 `/opt/imap/backend/.venv`
+- 安装 `backend/requirements.txt`
+- 生成 `backend/.env`，默认 `SYNC_INTERVAL=300`，SQLite 数据库放在 `/opt/imap/data/emails.db`
+- 执行 `npm ci && npm run build`
+- 复制 `frontend/dist` 到 `/var/www/imap`
+- 安装并重启 `imap-backend.service`
+- 如果 `/etc/nginx/sites-available/imap` 不存在，则安装默认 Nginx 站点配置；如果已经存在，会保留现有 HTTPS/证书配置
+- reload Nginx
+- 执行 `http://127.0.0.1:7892/health` 健康检查
+
+首次部署后请立即修改：
+
+```bash
+nano /opt/imap/backend/.env
+systemctl restart imap-backend
+```
+
+至少修改 `ADMIN_PASSWORD`、`SECRET_KEY`、`ENCRYPTION_KEY`。脚本不会在文档中保存这些值。
+
+## 日常更新
+
+在服务器上执行：
+
+```bash
+ssh -i ~/.ssh/id_ed25519 ubuntu@YOUR_SERVER_IP
+cd /opt/imap
+sudo bash deploy/update_from_git_1g1h.sh
+```
+
+更新脚本流程：
+
+1. `git fetch` + `git pull --ff-only`
+2. 备份 `/opt/imap/data/emails.db`
+3. 安装/更新 Python venv 依赖
+4. `npm ci` 并构建前端
+5. 复制 `frontend/dist` 到 `/var/www/imap`
+6. `systemctl restart imap-backend`
+7. `nginx -t && systemctl reload nginx`
+8. health check
+
+也可以从 Windows PowerShell 远程触发：
+
+```powershell
+.\deploy\deploy.ps1 -Server YOUR_SERVER_IP -KeyPath "$env:USERPROFILE\.ssh\id_ed25519"
+```
+
+## 验证
+
+```bash
+systemctl status imap-backend --no-pager
+journalctl -u imap-backend -n 50 --no-pager
+curl -fsS http://127.0.0.1:7892/health
+nginx -t
+```
+
+浏览器访问：
+
+- `http://YOUR_SERVER_IP/`
+- `http://YOUR_SERVER_IP/docs`
+- `http://YOUR_SERVER_IP/admin`
+
+## 1G1H 注意事项
+
+- 默认使用 SQLite 和单 worker，不建议在 1 核 1G 上开启多 worker。
+- 默认 `SYNC_INTERVAL=300`，避免频繁 IMAP 同步占满 CPU/内存。
+- 前端构建可能占用较多内存；如果 `npm run build` 被系统杀死，先给服务器增加 1G swap 后重试。
+- Nginx 只代理 `/api/`，不要写成 `/api`，否则 `/api-keys` 前端页面会被误转发到后端。
+- 不建议在生产 `.env` 中继续使用默认管理员密码或示例密钥。
+- 更新脚本使用 `git pull --ff-only`；如果服务器上有未提交本地改动，请先处理后再更新。

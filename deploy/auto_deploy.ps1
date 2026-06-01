@@ -1,4 +1,4 @@
-$password = "Aa121314"
+$password = "CHANGE_ME_PASSWORD"
 $server = "root@118.194.253.6"
 
 # 部署命令

@@ -93,11 +93,21 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/{spa_path:path}")
+def spa_fallback(spa_path: str):
+    """前端 SPA 路由兜底。API 和静态资源路径由上面的路由优先处理。"""
+    if spa_path.startswith(("api/", "assets/")):
+        return {"detail": "Not Found"}
+    if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
+        return FileResponse(FRONTEND_DIST / "index.html")
+    return {"message": "请先构建前端"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
         host=settings.host,
         port=settings.port,
-        reload=True
+        reload=False
     )

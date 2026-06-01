@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     # IMAP 配置
     imap_server: str = "outlook.office365.com"
     imap_port: int = 993
-    sync_interval: int = 30  # 秒
+    sync_interval: int = 300  # 秒，1C1G 服务器默认保守同步
+    enable_background_sync: bool = True
+    sync_concurrency: int = 1
+    sync_batch_size: int = 10
 
     # 管理员认证
     admin_username: str = "admin"
