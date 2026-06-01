@@ -55,6 +55,7 @@ class AdminImportTests(unittest.IsolatedAsyncioTestCase):
         try:
             unauthenticated = client.get("/api/admin/probe")
             self.assertEqual(unauthenticated.status_code, 401)
+            self.assertNotIn("www-authenticate", unauthenticated.headers)
 
             authenticated = client.get(
                 "/api/admin/probe",

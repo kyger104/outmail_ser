@@ -21,6 +21,8 @@
   --danger: #d33f49;
   --warning: #b77216;
   --shadow-panel: 0 12px 34px rgba(21, 42, 36, 0.08);
+  --shadow-hover: 0 14px 28px rgba(15, 84, 72, 0.12);
+  --focus-ring: 0 0 0 3px rgba(15, 159, 134, 0.16);
   --radius-xl: 18px;
   --radius-lg: 14px;
   --radius-md: 12px;
@@ -53,6 +55,8 @@
   --danger: #ff6b7a;
   --warning: #f1b84b;
   --shadow-panel: 0 18px 42px rgba(0, 0, 0, 0.26);
+  --shadow-hover: 0 18px 34px rgba(0, 0, 0, 0.24);
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.16);
 }
 
 * {
@@ -95,6 +99,23 @@ select {
 
 button {
   cursor: pointer;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 button:disabled {
@@ -170,13 +191,15 @@ a {
   padding: 0 16px;
   border-radius: 10px;
   border: 1px solid transparent;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  touch-action: manipulation;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .action-button {
   background: var(--accent);
   color: #ffffff;
   font-weight: 700;
+  box-shadow: 0 10px 20px rgba(15, 159, 134, 0.18);
 }
 
 :root[data-theme='dark'] .action-button {
@@ -199,6 +222,13 @@ a {
 .ghost-button:hover,
 .danger-button:hover {
   transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.action-button:active,
+.ghost-button:active,
+.danger-button:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .ghost-button:hover {
@@ -324,7 +354,18 @@ a {
 .field-select:focus {
   outline: none;
   border-color: var(--border-accent);
-  box-shadow: 0 0 0 3px var(--bg-accent-soft);
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 @media (max-width: 1180px) {
