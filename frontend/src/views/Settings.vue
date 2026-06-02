@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useDialog, useMessage } from 'naive-ui'
 
 interface UiPreferences {
   compactList: boolean
@@ -103,6 +104,8 @@ const defaultPreferences: UiPreferences = {
   refreshInterval: 0
 }
 
+const dialog = useDialog()
+const message = useMessage()
 const preferences = reactive<UiPreferences>({ ...defaultPreferences })
 const savedMessage = ref('')
 const cacheMessage = ref('')
@@ -162,23 +165,27 @@ async function refreshCacheState() {
 }
 
 async function clearLocalCache() {
-  const confirmed = window.confirm('确认清理本地缓存？本地 UI 偏好也会重置。')
-  if (!confirmed) {
-    return
-  }
+  dialog.warning({
+    title: '清理本地缓存',
+    content: '确认清理本地缓存？本地 UI 偏好也会重置。',
+    positiveText: '确认清理',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      window.localStorage.clear()
+      window.sessionStorage.clear()
 
-  window.localStorage.clear()
-  window.sessionStorage.clear()
+      if ('caches' in window) {
+        const keys = await window.caches.keys()
+        await Promise.all(keys.map((key) => window.caches.delete(key)))
+      }
 
-  if ('caches' in window) {
-    const keys = await window.caches.keys()
-    await Promise.all(keys.map((key) => window.caches.delete(key)))
-  }
-
-  Object.assign(preferences, defaultPreferences)
-  savedMessage.value = ''
-  cacheMessage.value = '本地缓存已清理。'
-  await refreshCacheState()
+      Object.assign(preferences, defaultPreferences)
+      savedMessage.value = ''
+      cacheMessage.value = '本地缓存已清理。'
+      await refreshCacheState()
+      message.success('本地缓存已清理')
+    }
+  })
 }
 
 onMounted(async () => {
@@ -293,7 +300,7 @@ onMounted(async () => {
   padding: 12px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
-  background: rgba(12, 23, 36, 0.7);
+  background: var(--bg-panel-muted);
 }
 
 .info-list dt {
@@ -305,7 +312,7 @@ onMounted(async () => {
 .info-list dd {
   margin: 0;
   overflow-wrap: anywhere;
-  color: var(--text-main);
+  color: var(--text-strong);
   font-family: 'Cascadia Code', Consolas, monospace;
   font-size: 13px;
 }
@@ -324,8 +331,8 @@ onMounted(async () => {
 }
 
 .feedback--success {
-  border: 1px solid rgba(57, 217, 138, 0.24);
-  background: rgba(57, 217, 138, 0.08);
+  border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
+  background: var(--bg-success-soft);
   color: var(--success);
 }
 

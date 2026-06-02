@@ -164,8 +164,8 @@ async function submitLogin() {
   padding: 34px;
   color: #effaf7;
   background:
-    linear-gradient(135deg, rgba(7, 78, 68, 0.9), rgba(12, 44, 42, 0.96)),
-    radial-gradient(circle at 78% 18%, rgba(45, 212, 191, 0.26), transparent 30%);
+    linear-gradient(135deg, rgba(30, 64, 175, 0.92), rgba(15, 23, 42, 0.96)),
+    radial-gradient(circle at 78% 18%, rgba(96, 165, 250, 0.28), transparent 30%);
 }
 
 .login-visual::after {
@@ -339,9 +339,9 @@ async function submitLogin() {
 .login-error {
   margin: -4px 0 0;
   padding: 11px 13px;
-  border: 1px solid rgba(211, 63, 73, 0.2);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
   border-radius: 12px;
-  background: rgba(211, 63, 73, 0.08);
+  background: var(--bg-danger-soft);
   color: var(--danger);
   font-size: 13px;
   font-weight: 700;

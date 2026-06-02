@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { AlertCircle, CheckCircle2, ClipboardPaste, Copy, FileDown, Info, Play, Trash2, UploadCloud } from '@lucide/vue'
 import api from '../utils/api'
 import { copyToClipboard } from '../utils/clipboard'
 import { downloadCsv } from '../utils/exportCsv'
@@ -233,43 +234,38 @@ function exportReportCsv() {
       <div>
         <span class="kicker">Mailbox Import</span>
         <h1>批量导入邮箱</h1>
-        <p class="muted-copy">粘贴邮箱和 IMAP token，系统会先解析格式，再提交有效数据到后台导入接口。</p>
-      </div>
-      <div class="hero-actions">
-        <button class="ghost-button" type="button" @click="pasteFromClipboard">一键粘贴</button>
-        <button class="danger-button" type="button" :disabled="!hasInput && !report" @click="clearInput">清空</button>
+        <p class="muted-copy">粘贴邮箱和 IMAP token，检查无误后一次提交导入。</p>
       </div>
     </section>
 
-    <section class="import-layout">
-      <aside class="side-stack">
-        <div class="shell-card info-card">
-          <h2>输入格式</h2>
-          <p class="muted-copy">每行一个邮箱，支持多种分隔符。空行会被忽略，IMAP token 不会保存到浏览器本地存储。</p>
+    <section class="import-workspace">
+      <aside class="shell-card guide-panel">
+        <div class="guide-block">
+          <h2><Info :size="18" />格式说明</h2>
+          <p class="muted-copy">每行一个邮箱，支持以下三种分隔符，空行会自动忽略。</p>
           <pre>{{ sampleText }}</pre>
-          <div class="format-list">
-            <span class="status-badge">邮箱----IMAP token</span>
-            <span class="status-badge">邮箱|IMAP token</span>
-            <span class="status-badge">邮箱:IMAP token</span>
-          </div>
         </div>
 
-        <div class="shell-card config-card">
-          <h2>导入配置</h2>
+        <div class="format-list">
+          <span class="status-badge">邮箱----IMAP token</span>
+          <span class="status-badge">邮箱|IMAP token</span>
+          <span class="status-badge">邮箱:IMAP token</span>
+        </div>
+
+        <div class="guide-divider" />
+
+        <div class="guide-block">
+          <h2>导入选项</h2>
           <label class="toggle-row">
             <input v-model="generateLinks" type="checkbox" />
             <span>
-              <strong>导入后生成访问链接</strong>
-              <small>如接口返回 link 或 jwt_token，报告会显示并导出链接。</small>
+              <strong>显示访问链接</strong>
+              <small>接口返回 link 或 jwt_token 时，在报告中显示并可导出。</small>
             </span>
           </label>
-
-          <button class="action-button run-button" type="button" :disabled="!canImport" @click="submitImport">
-            {{ importing ? '导入中...' : `执行导入 ${parsed.valid.length} 个邮箱` }}
-          </button>
         </div>
 
-        <div class="shell-card stats-card">
+        <div class="stats-card">
           <div>
             <span>总行数</span>
             <strong>{{ totalRows }}</strong>
@@ -289,24 +285,45 @@ function exportReportCsv() {
         <section class="shell-card input-card">
           <div class="section-header">
             <div>
-              <h2>原始数据</h2>
-              <p class="muted-copy">导入前会自动检查邮箱格式、分隔符和 token 是否为空。</p>
+              <h2><UploadCloud :size="20" />输入数据</h2>
+              <p class="muted-copy">导入前自动检查邮箱格式、分隔符和 token 是否为空。</p>
             </div>
             <div class="inline-actions">
-              <button class="ghost-button compact-button" type="button" @click="pasteFromClipboard">粘贴</button>
-              <button class="danger-button compact-button" type="button" :disabled="!hasInput" @click="clearInput">清空</button>
+              <button class="ghost-button icon-button" type="button" aria-label="粘贴" title="粘贴" @click="pasteFromClipboard">
+                <ClipboardPaste :size="18" />
+              </button>
+              <button class="danger-button icon-button" type="button" :disabled="!hasInput" aria-label="清空" title="清空" @click="clearInput">
+                <Trash2 :size="18" />
+              </button>
             </div>
           </div>
 
+          <label class="sr-only" for="mailbox-import-input">邮箱导入原始数据</label>
           <textarea
+            id="mailbox-import-input"
             v-model="inputText"
             class="field-textarea import-textarea"
+            aria-label="邮箱导入原始数据"
             spellcheck="false"
-            placeholder="user1@hotmail.com----imap-token-1&#10;user2@outlook.com|imap-token-2&#10;user3@live.com:imap-token-3"
+            placeholder="粘贴邮箱和 IMAP token，每行一条"
           />
 
+          <div class="input-footer">
+            <div class="parse-summary">
+              <span class="status-badge">{{ totalRows }} 行</span>
+              <span class="status-badge status-badge--success">{{ parsed.valid.length }} 有效</span>
+              <span class="status-badge" :class="{ 'status-badge--danger': parsed.invalid.length }">
+                {{ parsed.invalid.length }} 错误
+              </span>
+            </div>
+            <button class="action-button run-button" type="button" :disabled="!canImport" @click="submitImport">
+              <Play :size="17" />
+              {{ importing ? '导入中...' : `开始导入 ${parsed.valid.length} 个邮箱` }}
+            </button>
+          </div>
+
           <div v-if="parsed.invalid.length" class="parse-errors">
-            <strong>格式错误预览</strong>
+            <strong><AlertCircle :size="16" />格式错误预览</strong>
             <ul>
               <li v-for="item in parsed.invalid.slice(0, 6)" :key="`${item.line}-${item.raw}`">
                 第 {{ item.line }} 行：{{ item.reason }} <code>{{ item.raw }}</code>
@@ -319,17 +336,32 @@ function exportReportCsv() {
         <section class="shell-card report-card">
           <div class="section-header">
             <div>
-              <h2>执行报告</h2>
+              <h2><CheckCircle2 :size="20" />转换结果</h2>
               <p class="muted-copy">导入成功后可复制成功邮箱、复制失败报告或导出 CSV。</p>
             </div>
             <div v-if="report" class="inline-actions">
-              <button class="ghost-button compact-button" type="button" @click="copyImportedEmails">复制成功邮箱</button>
-              <button class="ghost-button compact-button" type="button" @click="copyFailedReport">复制失败报告</button>
-              <button class="action-button compact-button" type="button" @click="exportReportCsv">导出 CSV</button>
+              <button class="ghost-button compact-button" type="button" @click="copyImportedEmails">
+                <Copy :size="16" />
+                成功邮箱
+              </button>
+              <button class="ghost-button compact-button" type="button" @click="copyFailedReport">
+                <Copy :size="16" />
+                失败报告
+              </button>
+              <button class="action-button compact-button" type="button" @click="exportReportCsv">
+                <FileDown :size="16" />
+                CSV
+              </button>
             </div>
           </div>
 
-          <div v-if="notice" class="notice" :class="`notice--${notice.type}`">
+          <div
+            v-if="notice"
+            class="notice"
+            :class="`notice--${notice.type}`"
+            :role="notice.type === 'danger' ? 'alert' : 'status'"
+            :aria-live="notice.type === 'danger' ? 'assertive' : 'polite'"
+          >
             {{ notice.text }}
           </div>
 
@@ -373,7 +405,7 @@ function exportReportCsv() {
           </div>
 
           <div v-else class="empty-panel report-empty">
-            填入数据并点击执行导入后，这里会展示 imported / errors / total。
+            填入数据并点击开始导入后，这里会展示成功邮箱、失败报告和总数。
           </div>
         </section>
       </div>
@@ -383,53 +415,57 @@ function exportReportCsv() {
 
 <style scoped>
 .import-page {
-  padding: 28px;
+  padding: 26px;
 }
 
 .import-hero {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .import-hero h1 {
-  margin: 14px 0 8px;
+  margin: 12px 0 6px;
   color: var(--text-strong);
-  font-size: 32px;
+  font-size: 30px;
   line-height: 1.2;
   letter-spacing: 0;
 }
 
 .import-hero p,
 .section-header p,
-.info-card p {
+.guide-panel p {
   margin: 0;
 }
 
-.hero-actions,
 .inline-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.import-layout {
+.import-workspace {
   display: grid;
-  grid-template-columns: 330px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-areas: 'guide main';
+  gap: 20px;
   align-items: start;
 }
 
-.side-stack,
 .main-stack {
+  grid-area: main;
   display: grid;
-  gap: 18px;
+  gap: 20px;
+}
+
+.guide-panel {
+  grid-area: guide;
 }
 
 .shell-card {
-  padding: 20px;
+  padding: 22px;
 }
 
 .shell-card h2,
@@ -443,16 +479,44 @@ function exportReportCsv() {
   font-size: 17px;
 }
 
-.info-card pre {
+.guide-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.guide-block {
+  display: grid;
+  gap: 12px;
+}
+
+.guide-block h2,
+.input-card h2,
+.report-card h2,
+.parse-errors strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-panel pre {
   overflow-x: auto;
-  margin: 16px 0;
-  padding: 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  background: rgba(8, 17, 26, 0.72);
-  color: var(--accent);
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--bg-panel-muted);
+  color: var(--text-main);
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.guide-divider {
+  height: 1px;
+  background: var(--border-soft);
 }
 
 .format-list {
@@ -461,19 +525,14 @@ function exportReportCsv() {
   gap: 8px;
 }
 
-.config-card {
-  display: grid;
-  gap: 18px;
-}
-
 .toggle-row {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 16px;
-  background: rgba(12, 23, 36, 0.64);
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--bg-panel-muted);
 }
 
 .toggle-row input {
@@ -499,10 +558,6 @@ function exportReportCsv() {
   line-height: 1.5;
 }
 
-.run-button {
-  width: 100%;
-}
-
 .run-button:disabled,
 .compact-button:disabled,
 .danger-button:disabled {
@@ -514,14 +569,14 @@ function exportReportCsv() {
 .stats-card {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .stats-card div {
   min-width: 0;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(12, 23, 36, 0.66);
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--bg-panel-muted);
   border: 1px solid var(--border-soft);
 }
 
@@ -535,37 +590,62 @@ function exportReportCsv() {
 
 .stats-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--text-strong);
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .section-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
 }
 
 .compact-button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border-radius: 12px;
   font-size: 13px;
 }
 
+.icon-button {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+
 .import-textarea {
-  min-height: 340px;
+  min-height: 360px;
   font-family: 'Cascadia Code', 'SF Mono', Consolas, monospace;
   line-height: 1.65;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.parse-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.run-button {
+  min-width: 220px;
 }
 
 .parse-errors {
   margin-top: 14px;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 107, 122, 0.22);
-  background: rgba(255, 107, 122, 0.07);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  background: var(--bg-danger-soft);
 }
 
 .parse-errors strong {
@@ -600,20 +680,20 @@ function exportReportCsv() {
 
 .notice--success {
   color: var(--success);
-  background: rgba(57, 217, 138, 0.1);
-  border: 1px solid rgba(57, 217, 138, 0.2);
+  background: var(--bg-success-soft);
+  border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
 }
 
 .notice--warning {
   color: var(--warning);
-  background: rgba(247, 185, 85, 0.1);
-  border: 1px solid rgba(247, 185, 85, 0.2);
+  background: var(--bg-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .notice--danger {
   color: var(--danger);
-  background: rgba(255, 107, 122, 0.1);
-  border: 1px solid rgba(255, 107, 122, 0.2);
+  background: var(--bg-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
 .report-grid {
@@ -624,14 +704,14 @@ function exportReportCsv() {
 }
 
 .compact-metric {
-  min-height: 112px;
-  padding: 18px;
+  min-height: 96px;
+  padding: 16px;
 }
 
 .compact-metric .metric-value {
   display: block;
-  margin-top: 10px;
-  font-size: 34px;
+  margin-top: 8px;
+  font-size: 32px;
 }
 
 .result-columns {
@@ -644,7 +724,7 @@ function exportReportCsv() {
   min-width: 0;
   border: 1px solid var(--border-soft);
   border-radius: 16px;
-  background: rgba(12, 23, 36, 0.52);
+  background: var(--bg-panel-muted);
 }
 
 .result-panel h3 {
@@ -683,23 +763,33 @@ function exportReportCsv() {
 }
 
 .success-row {
-  background: rgba(57, 217, 138, 0.08);
-  border: 1px solid rgba(57, 217, 138, 0.14);
+  background: var(--bg-success-soft);
+  border: 1px solid color-mix(in srgb, var(--success) 24%, transparent);
 }
 
 .error-row {
-  background: rgba(255, 107, 122, 0.08);
-  border: 1px solid rgba(255, 107, 122, 0.14);
+  background: var(--bg-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
 }
 
 .report-empty {
-  min-height: 260px;
+  min-height: 180px;
 }
 
 @media (max-width: 1080px) {
-  .import-layout,
+  .import-workspace,
   .result-columns {
     grid-template-columns: 1fr;
+  }
+
+  .import-workspace {
+    grid-template-areas:
+      'main'
+      'guide';
+  }
+
+  .guide-panel {
+    position: static;
   }
 }
 
@@ -714,19 +804,32 @@ function exportReportCsv() {
     flex-direction: column;
   }
 
-  .hero-actions,
   .inline-actions {
     width: 100%;
   }
 
-  .hero-actions > *,
-  .inline-actions > * {
+  .inline-actions > *:not(.icon-button),
+  .input-footer > * {
     flex: 1;
+  }
+
+  .input-footer {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .report-grid,
   .stats-card {
     grid-template-columns: 1fr;
+  }
+
+  .run-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .report-empty {
+    min-height: 140px;
   }
 }
 </style>

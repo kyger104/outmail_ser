@@ -398,7 +398,7 @@ onMounted(refreshAll)
   padding: 0 14px;
   border-radius: 14px;
   border: 1px solid var(--border-strong);
-  background: rgba(12, 23, 36, 0.8);
+  background: var(--bg-panel-strong);
 }
 
 .search-box input {
@@ -424,7 +424,7 @@ onMounted(refreshAll)
   margin: 16px 0;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(70, 194, 255, 0.08);
+  background: var(--bg-accent-soft);
   color: var(--accent);
 }
 

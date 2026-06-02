@@ -215,7 +215,7 @@ onMounted(loadDashboard)
   gap: 14px;
   padding: 16px 18px;
   border: 1px solid var(--border-soft);
-  background: rgba(12, 23, 36, 0.78);
+  background: var(--bg-panel-muted);
   border-radius: 18px;
   color: var(--text-main);
 }

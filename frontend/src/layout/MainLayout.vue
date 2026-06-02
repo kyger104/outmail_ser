@@ -305,6 +305,7 @@ onMounted(() => {
 }
 
 .nav-item {
+  position: relative;
   width: 100%;
   border: 1px solid transparent;
   background: transparent;
@@ -326,9 +327,21 @@ onMounted(() => {
 }
 
 .nav-item--active {
-  background: linear-gradient(135deg, rgba(70, 194, 255, 0.14), rgba(247, 185, 85, 0.1));
-  border-color: rgba(70, 194, 255, 0.24);
+  background: var(--bg-accent-soft);
+  border-color: var(--border-accent);
   color: var(--text-strong);
+  font-weight: 800;
+}
+
+.nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 11px;
+  bottom: 11px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
 }
 
 .nav-item__main {
@@ -401,16 +414,16 @@ onMounted(() => {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(57, 217, 138, 0.2);
-  background: rgba(57, 217, 138, 0.08);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  background: var(--bg-success-soft);
   color: var(--success);
   font-size: 12px;
   font-weight: 600;
 }
 
 .glow-pill--danger {
-  border-color: rgba(255, 107, 122, 0.2);
-  background: rgba(255, 107, 122, 0.08);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  background: var(--bg-danger-soft);
   color: var(--danger);
 }
 

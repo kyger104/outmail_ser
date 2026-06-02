@@ -221,8 +221,8 @@ onMounted(() => {
 }
 
 .feedback--error {
-  border: 1px solid rgba(255, 107, 122, 0.24);
-  background: rgba(255, 107, 122, 0.08);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  background: var(--bg-danger-soft);
   color: var(--danger);
 }
 
@@ -260,7 +260,7 @@ onMounted(() => {
   padding: 12px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
-  background: rgba(12, 23, 36, 0.7);
+  background: var(--bg-panel-muted);
 }
 
 .status-row > div:first-child {
@@ -299,7 +299,7 @@ onMounted(() => {
   padding: 12px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
-  background: rgba(12, 23, 36, 0.7);
+  background: var(--bg-panel-muted);
 }
 
 .mailbox-row h3 {

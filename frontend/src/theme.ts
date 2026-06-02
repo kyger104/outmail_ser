@@ -5,21 +5,25 @@ const fontFamily = "Inter, Aptos, 'Segoe UI Variable', 'Segoe UI', 'PingFang SC'
 export const lightThemeOverrides: GlobalThemeOverrides = {
   common: {
     fontFamily,
-    primaryColor: '#0f9f86',
-    primaryColorHover: '#0d8a75',
-    primaryColorPressed: '#0a6f60',
-    primaryColorSuppl: '#0f9f86',
-    bodyColor: '#f6f8f7',
+    primaryColor: '#2563eb',
+    primaryColorHover: '#1d4ed8',
+    primaryColorPressed: '#1e40af',
+    primaryColorSuppl: '#2563eb',
+    successColor: '#059669',
+    warningColor: '#d97706',
+    errorColor: '#dc2626',
+    infoColor: '#0891b2',
+    bodyColor: '#f4f7fb',
     cardColor: '#ffffff',
     modalColor: '#ffffff',
     popoverColor: '#ffffff',
     tableColor: '#ffffff',
-    tableHeaderColor: '#f1f5f4',
-    borderColor: '#d9e3df',
-    dividerColor: '#e5ece9',
-    textColor1: '#10231f',
-    textColor2: '#3d5450',
-    textColor3: '#6b817c',
+    tableHeaderColor: '#f1f5f9',
+    borderColor: '#dbe4ee',
+    dividerColor: '#e2e8f0',
+    textColor1: '#0f172a',
+    textColor2: '#334155',
+    textColor3: '#64748b',
     borderRadius: '10px'
   },
   Button: {
@@ -32,68 +36,72 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
   Card: {
     borderRadius: '14px',
     color: '#ffffff',
-    colorEmbedded: '#f7faf8',
-    borderColor: '#d9e3df'
+    colorEmbedded: '#f8fafc',
+    borderColor: '#dbe4ee'
   },
   Input: {
     color: '#ffffff',
     colorFocus: '#ffffff',
-    border: '1px solid #d3dfda',
-    borderFocus: '1px solid #0f9f86',
-    boxShadowFocus: '0 0 0 3px rgba(15, 159, 134, 0.14)'
+    border: '1px solid #c5d1df',
+    borderFocus: '1px solid #2563eb',
+    boxShadowFocus: '0 0 0 3px rgba(37, 99, 235, 0.18)'
   },
   DataTable: {
-    thColor: '#f1f5f4',
+    thColor: '#f1f5f9',
     tdColor: '#ffffff',
-    tdColorHover: '#f3faf7',
-    borderColor: '#e2ebe7'
+    tdColorHover: '#eff6ff',
+    borderColor: '#e2e8f0'
   }
 }
 
 export const darkThemeOverrides: GlobalThemeOverrides = {
   common: {
     fontFamily,
-    primaryColor: '#2dd4bf',
-    primaryColorHover: '#5eead4',
-    primaryColorPressed: '#14b8a6',
-    primaryColorSuppl: '#2dd4bf',
-    bodyColor: '#0e1413',
-    cardColor: '#151d1b',
-    modalColor: '#151d1b',
-    popoverColor: '#151d1b',
-    tableColor: '#151d1b',
-    tableHeaderColor: '#1b2623',
-    borderColor: '#2b3c37',
-    dividerColor: '#22322e',
-    textColor1: '#effaf7',
-    textColor2: '#c2d7d2',
-    textColor3: '#85a09a',
+    primaryColor: '#60a5fa',
+    primaryColorHover: '#93c5fd',
+    primaryColorPressed: '#3b82f6',
+    primaryColorSuppl: '#60a5fa',
+    successColor: '#34d399',
+    warningColor: '#fbbf24',
+    errorColor: '#f87171',
+    infoColor: '#22d3ee',
+    bodyColor: '#0f172a',
+    cardColor: '#111827',
+    modalColor: '#111827',
+    popoverColor: '#111827',
+    tableColor: '#111827',
+    tableHeaderColor: '#1e293b',
+    borderColor: '#334155',
+    dividerColor: '#263449',
+    textColor1: '#f8fafc',
+    textColor2: '#cbd5e1',
+    textColor3: '#94a3b8',
     borderRadius: '10px'
   },
   Button: {
     borderRadiusMedium: '10px',
     borderRadiusLarge: '10px',
-    textColorPrimary: '#06211d',
-    textColorHoverPrimary: '#06211d',
-    textColorPressedPrimary: '#06211d'
+    textColorPrimary: '#08111f',
+    textColorHoverPrimary: '#08111f',
+    textColorPressedPrimary: '#08111f'
   },
   Card: {
     borderRadius: '14px',
-    color: '#151d1b',
-    colorEmbedded: '#1b2623',
-    borderColor: '#2b3c37'
+    color: '#111827',
+    colorEmbedded: '#1e293b',
+    borderColor: '#334155'
   },
   Input: {
-    color: '#111a18',
-    colorFocus: '#111a18',
-    border: '1px solid #2b3c37',
-    borderFocus: '1px solid #2dd4bf',
-    boxShadowFocus: '0 0 0 3px rgba(45, 212, 191, 0.16)'
+    color: '#111827',
+    colorFocus: '#111827',
+    border: '1px solid #334155',
+    borderFocus: '1px solid #60a5fa',
+    boxShadowFocus: '0 0 0 3px rgba(96, 165, 250, 0.16)'
   },
   DataTable: {
-    thColor: '#1b2623',
-    tdColor: '#151d1b',
-    tdColorHover: 'rgba(45, 212, 191, 0.08)',
-    borderColor: '#263833'
+    thColor: '#1e293b',
+    tdColor: '#111827',
+    tdColorHover: 'rgba(96, 165, 250, 0.1)',
+    borderColor: '#263449'
   }
 }

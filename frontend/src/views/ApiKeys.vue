@@ -140,6 +140,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useDialog, useMessage } from 'naive-ui'
 import api from '../utils/api'
 import { copyToClipboard } from '../utils/clipboard'
 import { formatDateTime } from '../utils/formatDate'
@@ -167,6 +168,8 @@ const total = ref(0)
 const loading = ref(false)
 const creating = ref(false)
 const busyId = ref<number | null>(null)
+const message = useMessage()
+const dialog = useDialog()
 const errorMessage = ref('')
 const successMessage = ref('')
 const createdKey = ref<ApiKeyItem | null>(null)
@@ -258,27 +261,29 @@ async function toggleKey(item: ApiKeyItem) {
 }
 
 async function deleteKey(item: ApiKeyItem) {
-  const confirmed = window.confirm(`确认删除 API Key「${item.name}」？此操作不可恢复。`)
-  if (!confirmed) {
-    return
-  }
-
-  busyId.value = item.id
-  clearFeedback()
-
-  try {
-    await api.delete(`/admin/api-keys/${item.id}`)
-    keys.value = keys.value.filter((key) => key.id !== item.id)
-    total.value = Math.max(0, total.value - 1)
-    if (createdKey.value?.id === item.id) {
-      createdKey.value = null
+  dialog.warning({
+    title: '删除 API Key',
+    content: `确认删除「${item.name}」？此操作不可恢复。`,
+    positiveText: '确认删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      busyId.value = item.id
+      clearFeedback()
+      try {
+        await api.delete(`/admin/api-keys/${item.id}`)
+        keys.value = keys.value.filter((key) => key.id !== item.id)
+        total.value = Math.max(0, total.value - 1)
+        if (createdKey.value?.id === item.id) {
+          createdKey.value = null
+        }
+        message.success('API Key 已删除')
+      } catch (error) {
+        message.error(readError(error))
+      } finally {
+        busyId.value = null
+      }
     }
-    successMessage.value = 'API Key 已删除。'
-  } catch (error) {
-    errorMessage.value = readError(error)
-  } finally {
-    busyId.value = null
-  }
+  })
 }
 
 async function copyKey(value: string) {
@@ -388,14 +393,14 @@ onMounted(loadKeys)
 }
 
 .feedback--error {
-  border: 1px solid rgba(255, 107, 122, 0.24);
-  background: rgba(255, 107, 122, 0.08);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  background: var(--bg-danger-soft);
   color: var(--danger);
 }
 
 .feedback--success {
-  border: 1px solid rgba(57, 217, 138, 0.24);
-  background: rgba(57, 217, 138, 0.08);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  background: var(--bg-success-soft);
   color: var(--success);
 }
 
