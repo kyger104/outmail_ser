@@ -34,6 +34,7 @@ const stats = ref<AdminStats>({})
 const selectedRowKeys = ref<number[]>([])
 const searchQuery = ref('')
 const statusFilter = ref((route.query.status as string) || 'all')
+const groupFilter = ref('all')
 const page = ref(1)
 const pageSize = 50
 const syncingIds = ref(new Set<number>())
@@ -48,6 +49,13 @@ const statusOptions = [
 
 const linkMap = computed(() => new Map(links.value.map((item) => [item.id ?? item.mailbox_id, item.link])))
 const selectedRows = computed(() => mailboxes.value.filter((row) => selectedRowKeys.value.includes(row.id)))
+function mailboxGroup(email: string) {
+  return email.split('@')[1]?.toLowerCase() || 'unknown'
+}
+const groupOptions = computed(() => {
+  const domains = Array.from(new Set(mailboxes.value.map((row) => mailboxGroup(row.email)))).sort()
+  return [{ label: '全部分组', value: 'all' }, ...domains.map((domain) => ({ label: domain, value: domain }))]
+})
 const filteredRows = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   return mailboxes.value.filter((row) => {
@@ -55,7 +63,8 @@ const filteredRows = computed(() => {
     const matchesStatus =
       statusFilter.value === 'all' ||
       (statusFilter.value === 'unsynced' ? !row.last_sync : row.status === statusFilter.value)
-    return matchesSearch && matchesStatus
+    const matchesGroup = groupFilter.value === 'all' || mailboxGroup(row.email) === groupFilter.value
+    return matchesSearch && matchesStatus && matchesGroup
   })
 })
 
@@ -276,13 +285,18 @@ onMounted(refreshAll)
 
 <template>
   <section class="admin-shell page-shell">
-    <div class="admin-hero shell-card">
-      <div>
-        <div class="kicker">邮箱管理</div>
-        <h1>托管邮箱列表</h1>
-        <p>轻量管理 IMAP 邮箱、访问链接和同步状态。统计优先读取轻量接口，访问链接在复制或导出时按需加载。</p>
+    <div class="admin-summary shell-card">
+      <div class="summary-title">
+        <h1>邮箱</h1>
+        <span>{{ filteredRows.length }} / {{ mailboxes.length }} 条</span>
       </div>
-      <div class="admin-hero__actions">
+      <div class="summary-metrics">
+        <span v-for="metric in metrics" :key="metric.label" class="metric-chip">
+          <strong>{{ metric.value }}</strong>
+          {{ metric.label }}
+        </span>
+      </div>
+      <div class="admin-summary__actions">
         <button class="ghost-button" type="button" :disabled="loading || linkLoading || statsLoading" @click="refreshAll">
           <RefreshCw :size="16" />
           <span>{{ loading || linkLoading || statsLoading ? '刷新中' : '刷新' }}</span>
@@ -294,14 +308,6 @@ onMounted(refreshAll)
       </div>
     </div>
 
-    <div class="stat-grid">
-      <article v-for="metric in metrics" :key="metric.label" class="metric-card">
-        <div class="metric-label">{{ metric.label }}</div>
-        <div class="metric-value">{{ metric.value }}</div>
-        <div class="metric-meta">{{ metric.meta }}</div>
-      </article>
-    </div>
-
     <section class="shell-card list-panel">
       <div class="list-toolbar">
         <label class="search-box">
@@ -310,6 +316,9 @@ onMounted(refreshAll)
         </label>
         <select v-model="statusFilter" class="field-select status-select" aria-label="状态筛选">
           <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
+        <select v-model="groupFilter" class="field-select group-select" aria-label="邮箱分组">
+          <option v-for="option in groupOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
         <button class="ghost-button" type="button" @click="copySelectedLinks">
           <Copy :size="16" />
@@ -354,39 +363,73 @@ onMounted(refreshAll)
 .admin-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
-.admin-hero {
+.admin-summary {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 28px;
+  gap: 12px;
+  padding: 12px 14px;
 }
 
-.admin-hero h1 {
-  margin: 12px 0 8px;
-  color: var(--text-strong);
-  font-size: clamp(28px, 4vw, 40px);
+.summary-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 150px;
 }
 
-.admin-hero p {
-  max-width: 760px;
+.summary-title h1 {
   margin: 0;
-  color: var(--text-main);
-  line-height: 1.7;
+  color: var(--text-strong);
+  font-size: 20px;
 }
 
-.admin-hero__actions,
+.summary-title span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summary-metrics {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-muted);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric-chip strong {
+  color: var(--text-strong);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-summary__actions,
 .list-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .list-panel {
-  padding: 22px;
+  padding: 14px;
 }
 
 .search-box {
@@ -413,7 +456,8 @@ onMounted(refreshAll)
   outline: none;
 }
 
-.status-select {
+.status-select,
+.group-select {
   width: 170px;
 }
 
@@ -434,8 +478,9 @@ onMounted(refreshAll)
 }
 
 @media (max-width: 900px) {
-  .admin-hero {
+  .admin-summary {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .list-toolbar > * {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AlertCircle, CheckCircle2, ClipboardPaste, Copy, FileDown, Info, Play, Trash2, UploadCloud } from '@lucide/vue'
+import { AlertCircle, CheckCircle2, ClipboardPaste, Copy, FileDown, Play, Trash2, UploadCloud } from '@lucide/vue'
 import api from '../utils/api'
 import { copyToClipboard } from '../utils/clipboard'
 import { downloadCsv } from '../utils/exportCsv'
@@ -58,9 +58,9 @@ const hasInput = computed(() => inputText.value.trim().length > 0)
 const canImport = computed(() => parsed.value.valid.length > 0 && !importing.value)
 
 const sampleText = [
-  'user1@hotmail.com----imap-token-1',
-  'user2@outlook.com|imap-token-2',
-  'user3@live.com:imap-token-3'
+  'user1@hotmail.com----password----client-id----imap-token-1',
+  'user2@outlook.com----password----client-id----imap-token-2',
+  'user3@live.com----password----client-id----imap-token-3'
 ].join('\n')
 
 function showNotice(type: 'success' | 'warning' | 'danger', text: string) {
@@ -230,72 +230,60 @@ function exportReportCsv() {
 
 <template>
   <main class="import-page page-shell">
-    <section class="import-hero">
-      <div>
-        <span class="kicker">Mailbox Import</span>
-        <h1>批量导入邮箱</h1>
-        <p class="muted-copy">粘贴邮箱和 IMAP token，检查无误后一次提交导入。</p>
-      </div>
-    </section>
-
-    <section class="import-workspace">
-      <aside class="shell-card guide-panel">
-        <div class="guide-block">
-          <h2><Info :size="18" />格式说明</h2>
-          <p class="muted-copy">每行一个邮箱，支持以下三种分隔符，空行会自动忽略。</p>
-          <pre>{{ sampleText }}</pre>
+    <section class="shell-card import-console">
+      <header class="console-toolbar">
+        <div class="console-title">
+          <h1>导入邮箱</h1>
+          <span>默认格式：账号----密码----id----令牌，系统只取账号和第 4 段令牌。</span>
         </div>
 
-        <div class="format-list">
-          <span class="status-badge">邮箱----IMAP token</span>
-          <span class="status-badge">邮箱|IMAP token</span>
-          <span class="status-badge">邮箱:IMAP token</span>
+        <div class="console-stats" aria-label="解析统计">
+          <span><strong>{{ totalRows }}</strong> 行</span>
+          <span class="success"><strong>{{ parsed.valid.length }}</strong> 有效</span>
+          <span :class="{ danger: parsed.invalid.length }"><strong>{{ parsed.invalid.length }}</strong> 错误</span>
         </div>
 
-        <div class="guide-divider" />
-
-        <div class="guide-block">
-          <h2>导入选项</h2>
-          <label class="toggle-row">
+        <div class="console-actions">
+          <label class="link-toggle">
             <input v-model="generateLinks" type="checkbox" />
-            <span>
-              <strong>显示访问链接</strong>
-              <small>接口返回 link 或 jwt_token 时，在报告中显示并可导出。</small>
-            </span>
+            显示链接
           </label>
+          <button class="ghost-button compact-button" type="button" @click="pasteFromClipboard">
+            <ClipboardPaste :size="16" />
+            粘贴
+          </button>
+          <button class="danger-button compact-button" type="button" :disabled="!hasInput" @click="clearInput">
+            <Trash2 :size="16" />
+            清空
+          </button>
+          <button class="action-button compact-button run-button" type="button" :disabled="!canImport" @click="submitImport">
+            <Play :size="16" />
+            {{ importing ? '导入中' : `导入 ${parsed.valid.length}` }}
+          </button>
         </div>
+      </header>
 
-        <div class="stats-card">
-          <div>
-            <span>总行数</span>
-            <strong>{{ totalRows }}</strong>
-          </div>
-          <div>
-            <span>有效行</span>
-            <strong>{{ parsed.valid.length }}</strong>
-          </div>
-          <div>
-            <span>错误行</span>
-            <strong>{{ parsed.invalid.length }}</strong>
-          </div>
-        </div>
-      </aside>
+      <div
+        v-if="notice"
+        class="notice"
+        :class="`notice--${notice.type}`"
+        :role="notice.type === 'danger' ? 'alert' : 'status'"
+        :aria-live="notice.type === 'danger' ? 'assertive' : 'polite'"
+      >
+        {{ notice.text }}
+      </div>
 
-      <div class="main-stack">
-        <section class="shell-card input-card">
-          <div class="section-header">
-            <div>
-              <h2><UploadCloud :size="20" />输入数据</h2>
-              <p class="muted-copy">导入前自动检查邮箱格式、分隔符和 token 是否为空。</p>
-            </div>
-            <div class="inline-actions">
-              <button class="ghost-button icon-button" type="button" aria-label="粘贴" title="粘贴" @click="pasteFromClipboard">
-                <ClipboardPaste :size="18" />
-              </button>
-              <button class="danger-button icon-button" type="button" :disabled="!hasInput" aria-label="清空" title="清空" @click="clearInput">
-                <Trash2 :size="18" />
-              </button>
-            </div>
+      <div class="format-strip">
+        <UploadCloud :size="16" />
+        <code>{{ sampleText.split('\n')[0] }}</code>
+        <span>兼容旧格式：邮箱----token / 邮箱|token / 邮箱:token</span>
+      </div>
+
+      <section class="import-grid">
+        <div class="work-panel input-panel">
+          <div class="panel-bar">
+            <h2>原始数据</h2>
+            <span>{{ parsed.valid.length }} 个待导入</span>
           </div>
 
           <label class="sr-only" for="mailbox-import-input">邮箱导入原始数据</label>
@@ -305,365 +293,265 @@ function exportReportCsv() {
             class="field-textarea import-textarea"
             aria-label="邮箱导入原始数据"
             spellcheck="false"
-            placeholder="粘贴邮箱和 IMAP token，每行一条"
+            placeholder="账号----密码----id----令牌，每行一条"
           />
 
-          <div class="input-footer">
-            <div class="parse-summary">
-              <span class="status-badge">{{ totalRows }} 行</span>
-              <span class="status-badge status-badge--success">{{ parsed.valid.length }} 有效</span>
-              <span class="status-badge" :class="{ 'status-badge--danger': parsed.invalid.length }">
-                {{ parsed.invalid.length }} 错误
-              </span>
-            </div>
-            <button class="action-button run-button" type="button" :disabled="!canImport" @click="submitImport">
-              <Play :size="17" />
-              {{ importing ? '导入中...' : `开始导入 ${parsed.valid.length} 个邮箱` }}
-            </button>
-          </div>
-
           <div v-if="parsed.invalid.length" class="parse-errors">
-            <strong><AlertCircle :size="16" />格式错误预览</strong>
+            <strong><AlertCircle :size="15" />格式错误</strong>
             <ul>
-              <li v-for="item in parsed.invalid.slice(0, 6)" :key="`${item.line}-${item.raw}`">
+              <li v-for="item in parsed.invalid.slice(0, 5)" :key="`${item.line}-${item.raw}`">
                 第 {{ item.line }} 行：{{ item.reason }} <code>{{ item.raw }}</code>
               </li>
             </ul>
-            <p v-if="parsed.invalid.length > 6" class="muted-copy">还有 {{ parsed.invalid.length - 6 }} 行错误未显示。</p>
+            <p v-if="parsed.invalid.length > 5" class="muted-copy">还有 {{ parsed.invalid.length - 5 }} 行错误未显示。</p>
           </div>
-        </section>
+        </div>
 
-        <section class="shell-card report-card">
-          <div class="section-header">
-            <div>
-              <h2><CheckCircle2 :size="20" />转换结果</h2>
-              <p class="muted-copy">导入成功后可复制成功邮箱、复制失败报告或导出 CSV。</p>
-            </div>
-            <div v-if="report" class="inline-actions">
+        <aside class="work-panel report-panel">
+          <div class="panel-bar">
+            <h2><CheckCircle2 :size="17" />导入结果</h2>
+            <div v-if="report" class="result-actions">
               <button class="ghost-button compact-button" type="button" @click="copyImportedEmails">
-                <Copy :size="16" />
-                成功邮箱
+                <Copy :size="15" />成功
               </button>
               <button class="ghost-button compact-button" type="button" @click="copyFailedReport">
-                <Copy :size="16" />
-                失败报告
+                <Copy :size="15" />失败
               </button>
               <button class="action-button compact-button" type="button" @click="exportReportCsv">
-                <FileDown :size="16" />
-                CSV
+                <FileDown :size="15" />CSV
               </button>
             </div>
           </div>
 
-          <div
-            v-if="notice"
-            class="notice"
-            :class="`notice--${notice.type}`"
-            :role="notice.type === 'danger' ? 'alert' : 'status'"
-            :aria-live="notice.type === 'danger' ? 'assertive' : 'polite'"
-          >
-            {{ notice.text }}
+          <div v-if="report" class="result-summary">
+            <span><strong>{{ report.imported.length }}</strong> 成功</span>
+            <span :class="{ danger: report.errors.length }"><strong>{{ report.errors.length }}</strong> 失败</span>
+            <span><strong>{{ report.total }}</strong> 提交</span>
           </div>
 
-          <div v-if="report" class="report-grid">
-            <div class="metric-card compact-metric">
-              <span class="metric-label">Imported</span>
-              <strong class="metric-value">{{ report.imported.length }}</strong>
-            </div>
-            <div class="metric-card compact-metric">
-              <span class="metric-label">Errors</span>
-              <strong class="metric-value">{{ report.errors.length }}</strong>
-            </div>
-            <div class="metric-card compact-metric">
-              <span class="metric-label">Total</span>
-              <strong class="metric-value">{{ report.total }}</strong>
-            </div>
-          </div>
-
-          <div v-if="report" class="result-columns">
-            <div class="result-panel">
+          <div v-if="report" class="result-lists">
+            <section>
               <h3>成功邮箱</h3>
               <div v-if="report.imported.length" class="result-list">
-                <div v-for="item in report.imported" :key="item.email" class="result-row success-row">
+                <div v-for="(item, index) in report.imported" :key="`${item.email}-${index}`" class="result-row success-row">
                   <span>{{ item.email }}</span>
-                  <a v-if="generateLinks && item.link" :href="item.link" target="_blank" rel="noreferrer">访问链接</a>
-                  <span v-else class="muted-copy">{{ item.status }}</span>
+                  <a v-if="generateLinks && item.link" :href="item.link" target="_blank" rel="noreferrer">查看</a>
+                  <span v-else>{{ item.status }}</span>
                 </div>
               </div>
-              <div v-else class="empty-panel">暂无成功导入项</div>
-            </div>
+              <div v-else class="empty-panel compact-empty">暂无成功项</div>
+            </section>
 
-            <div class="result-panel">
+            <section>
               <h3>失败报告</h3>
               <div v-if="report.errors.length" class="result-list">
                 <div v-for="item in report.errors" :key="errorLine(item)" class="result-row error-row">
                   <span>{{ errorLine(item) }}</span>
                 </div>
               </div>
-              <div v-else class="empty-panel">暂无失败项</div>
-            </div>
+              <div v-else class="empty-panel compact-empty">暂无失败项</div>
+            </section>
           </div>
 
           <div v-else class="empty-panel report-empty">
-            填入数据并点击开始导入后，这里会展示成功邮箱、失败报告和总数。
+            导入后在这里显示成功邮箱、失败原因和访问链接。
           </div>
-        </section>
-      </div>
+        </aside>
+      </section>
     </section>
   </main>
 </template>
 
 <style scoped>
 .import-page {
-  padding: 26px;
+  padding: 10px 12px 16px;
 }
 
-.import-hero {
+.import-console {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.console-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 12px;
 }
 
-.import-hero h1 {
-  margin: 12px 0 6px;
+.console-title {
+  min-width: 260px;
+}
+
+.console-title h1 {
+  margin: 0;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 22px;
   line-height: 1.2;
-  letter-spacing: 0;
 }
 
-.import-hero p,
-.section-header p,
-.guide-panel p {
-  margin: 0;
-}
-
-.inline-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.import-workspace {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  grid-template-areas: 'guide main';
-  gap: 20px;
-  align-items: start;
-}
-
-.main-stack {
-  grid-area: main;
-  display: grid;
-  gap: 20px;
-}
-
-.guide-panel {
-  grid-area: guide;
-}
-
-.shell-card {
-  padding: 22px;
-}
-
-.shell-card h2,
-.result-panel h3 {
-  margin: 0;
-  color: var(--text-strong);
-  letter-spacing: 0;
-}
-
-.shell-card h2 {
-  font-size: 17px;
-}
-
-.guide-panel {
-  position: sticky;
-  top: 16px;
-  display: grid;
-  gap: 18px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-}
-
-.guide-block {
-  display: grid;
-  gap: 12px;
-}
-
-.guide-block h2,
-.input-card h2,
-.report-card h2,
-.parse-errors strong {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.guide-panel pre {
-  overflow-x: auto;
-  margin: 0;
-  padding: 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--bg-panel-muted);
-  color: var(--text-main);
-  font-size: 12px;
-  line-height: 1.8;
-  white-space: pre-wrap;
-}
-
-.guide-divider {
-  height: 1px;
-  background: var(--border-soft);
-}
-
-.format-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.toggle-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--bg-panel-muted);
-}
-
-.toggle-row input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  accent-color: var(--accent);
-}
-
-.toggle-row strong,
-.toggle-row small {
+.console-title span {
   display: block;
-}
-
-.toggle-row strong {
-  color: var(--text-strong);
-  font-size: 14px;
-}
-
-.toggle-row small {
   margin-top: 4px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.run-button:disabled,
-.compact-button:disabled,
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
-}
-
-.stats-card {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.stats-card div {
-  min-width: 0;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--bg-panel-muted);
-  border: 1px solid var(--border-soft);
-}
-
-.stats-card span,
-.metric-label {
-  display: block;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
 }
 
-.stats-card strong {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-strong);
-  font-size: 22px;
-}
-
-.section-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.compact-button {
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 12px;
-  font-size: 13px;
-}
-
-.icon-button {
-  width: 44px;
-  min-width: 44px;
-  padding: 0;
-}
-
-.import-textarea {
-  min-height: 360px;
-  font-family: 'Cascadia Code', 'SF Mono', Consolas, monospace;
-  line-height: 1.65;
-}
-
-.input-footer {
+.console-stats,
+.console-actions,
+.result-actions,
+.result-summary,
+.format-strip,
+.panel-bar,
+.parse-errors strong {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-.parse-summary {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 
+.console-stats span,
+.result-summary span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-muted);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.console-stats strong,
+.result-summary strong {
+  color: var(--text-strong);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .run-button {
-  min-width: 220px;
+  min-width: 108px;
+}
+
+.link-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.link-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+.format-strip {
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-muted);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.format-strip code {
+  max-width: 520px;
+  overflow: hidden;
+  color: var(--text-main);
+  font-family: 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 0.85fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.work-panel {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-muted);
+}
+
+.panel-bar {
+  justify-content: space-between;
+  min-height: 34px;
+  margin-bottom: 8px;
+}
+
+.panel-bar h2,
+.result-lists h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.panel-bar span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.import-textarea {
+  min-height: min(52vh, 560px);
+  font-family: 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .parse-errors {
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 14px;
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
   background: var(--bg-danger-soft);
 }
 
 .parse-errors strong {
+  margin-bottom: 6px;
   color: var(--danger);
+  font-size: 12px;
 }
 
 .parse-errors ul {
   display: grid;
-  gap: 8px;
-  margin: 10px 0 0;
+  gap: 5px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .parse-errors li {
   color: var(--text-main);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .parse-errors code {
@@ -672,9 +560,9 @@ function exportReportCsv() {
 }
 
 .notice {
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -696,59 +584,32 @@ function exportReportCsv() {
   border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
-.report-grid {
+.report-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  align-content: start;
+  gap: 8px;
 }
 
-.compact-metric {
-  min-height: 96px;
-  padding: 16px;
-}
-
-.compact-metric .metric-value {
-  display: block;
-  margin-top: 8px;
-  font-size: 32px;
-}
-
-.result-columns {
+.result-lists {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.result-panel {
-  min-width: 0;
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
-  background: var(--bg-panel-muted);
-}
-
-.result-panel h3 {
-  padding: 14px;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 15px;
+  gap: 8px;
 }
 
 .result-list {
   display: grid;
-  gap: 8px;
-  max-height: 320px;
+  gap: 5px;
+  max-height: 235px;
   overflow: auto;
-  padding: 12px;
 }
 
 .result-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.45;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .result-row span {
@@ -759,6 +620,7 @@ function exportReportCsv() {
 .result-row a {
   flex: 0 0 auto;
   color: var(--accent);
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -772,64 +634,65 @@ function exportReportCsv() {
   border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
 }
 
+.compact-empty,
 .report-empty {
-  min-height: 180px;
+  min-height: 92px;
+  border-radius: var(--radius-sm);
 }
 
-@media (max-width: 1080px) {
-  .import-workspace,
-  .result-columns {
+.success {
+  color: var(--success) !important;
+}
+
+.danger {
+  color: var(--danger) !important;
+}
+
+.run-button:disabled,
+.compact-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+@media (max-width: 1180px) {
+  .console-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .console-actions {
+    flex-wrap: wrap;
+  }
+
+  .import-grid {
     grid-template-columns: 1fr;
-  }
-
-  .import-workspace {
-    grid-template-areas:
-      'main'
-      'guide';
-  }
-
-  .guide-panel {
-    position: static;
   }
 }
 
 @media (max-width: 720px) {
   .import-page {
-    padding: 18px;
+    padding: 8px;
   }
 
-  .import-hero,
-  .section-header {
-    align-items: stretch;
+  .console-stats {
+    flex-wrap: wrap;
+  }
+
+  .format-strip {
+    align-items: flex-start;
     flex-direction: column;
   }
 
-  .inline-actions {
-    width: 100%;
+  .format-strip code {
+    max-width: 100%;
   }
 
-  .inline-actions > *:not(.icon-button),
-  .input-footer > * {
-    flex: 1;
-  }
-
-  .input-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .report-grid,
-  .stats-card {
-    grid-template-columns: 1fr;
-  }
-
+  .console-actions > button,
   .run-button {
-    width: 100%;
+    flex: 1;
     min-width: 0;
-  }
-
-  .report-empty {
-    min-height: 140px;
   }
 }
 </style>

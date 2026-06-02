@@ -2,76 +2,26 @@
   <main class="page-shell settings-page">
     <header class="page-header">
       <div>
-        <span class="kicker">Settings</span>
         <h1>设置</h1>
-        <p class="muted-copy">仅管理本地 UI 偏好和缓存，不保存管理员密码、API Key 或邮箱令牌。</p>
       </div>
     </header>
 
-    <section class="settings-grid">
-      <article class="shell-card section-panel">
-        <div class="panel-heading">
-          <h2>本地 UI 偏好</h2>
-          <p>这些配置只影响当前浏览器，不会上传到后端。</p>
-        </div>
+    <nav class="settings-tabs" aria-label="设置分类">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        class="tab-button"
+        :class="{ 'tab-button--active': activeTab === tab.id }"
+        type="button"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
 
-        <label class="setting-row">
-          <span>
-            <strong>紧凑列表</strong>
-            <small>用于未来列表页降低行高和留白。</small>
-          </span>
-          <input v-model="preferences.compactList" type="checkbox" @change="savePreferences">
-        </label>
+    <ApiKeysPanel v-if="activeTab === 'apiKeys'" />
 
-        <label class="setting-row">
-          <span>
-            <strong>新标签打开收件箱链接</strong>
-            <small>用于外部链接操作的本地行为偏好。</small>
-          </span>
-          <input v-model="preferences.openInboxInNewTab" type="checkbox" @change="savePreferences">
-        </label>
-
-        <label class="field-group">
-          <span class="field-label">默认刷新间隔</span>
-          <select v-model="preferences.refreshInterval" class="field-select" @change="savePreferences">
-            <option :value="0">手动刷新</option>
-            <option :value="30">30 秒</option>
-            <option :value="60">1 分钟</option>
-            <option :value="300">5 分钟</option>
-          </select>
-        </label>
-
-        <p v-if="savedMessage" class="feedback feedback--success" role="status">{{ savedMessage }}</p>
-      </article>
-
-      <article class="shell-card section-panel">
-        <div class="panel-heading">
-          <h2>运行信息</h2>
-          <p>用于排查部署环境，不包含敏感凭据。</p>
-        </div>
-
-        <dl class="info-list">
-          <div>
-            <dt>后端地址</dt>
-            <dd>{{ backendBase }}</dd>
-          </div>
-          <div>
-            <dt>当前版本</dt>
-            <dd>{{ appVersion }}</dd>
-          </div>
-          <div>
-            <dt>Base URL</dt>
-            <dd>{{ baseUrl }}</dd>
-          </div>
-          <div>
-            <dt>缓存项</dt>
-            <dd>{{ cacheSummary }}</dd>
-          </div>
-        </dl>
-      </article>
-    </section>
-
-    <section class="shell-card section-panel">
+    <section v-else-if="activeTab === 'cache'" class="shell-card section-panel">
       <div class="panel-heading">
         <h2>本地缓存</h2>
         <p>清理 localStorage、sessionStorage 和可用的 Cache Storage。已打开页面内存中的临时认证会随刷新丢失。</p>
@@ -84,34 +34,52 @@
 
       <p v-if="cacheMessage" class="feedback feedback--success" role="status">{{ cacheMessage }}</p>
     </section>
+
+    <section v-else class="shell-card section-panel">
+      <div class="panel-heading">
+        <h2>运行信息</h2>
+        <p>用于排查部署环境，不包含敏感凭据。</p>
+      </div>
+
+      <dl class="info-list info-list--compact">
+        <div>
+          <dt>后端地址</dt>
+          <dd>{{ backendBase }}</dd>
+        </div>
+        <div>
+          <dt>当前版本</dt>
+          <dd>{{ appVersion }}</dd>
+        </div>
+        <div>
+          <dt>Base URL</dt>
+          <dd>{{ baseUrl }}</dd>
+        </div>
+        <div>
+          <dt>缓存项</dt>
+          <dd>{{ cacheSummary }}</dd>
+        </div>
+      </dl>
+    </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useDialog, useMessage } from 'naive-ui'
-
-interface UiPreferences {
-  compactList: boolean
-  openInboxInNewTab: boolean
-  refreshInterval: number
-}
-
-const preferenceKey = 'imap.ui.preferences'
-const defaultPreferences: UiPreferences = {
-  compactList: false,
-  openInboxInNewTab: true,
-  refreshInterval: 0
-}
+import ApiKeysPanel from './ApiKeys.vue'
 
 const dialog = useDialog()
 const message = useMessage()
-const preferences = reactive<UiPreferences>({ ...defaultPreferences })
-const savedMessage = ref('')
 const cacheMessage = ref('')
 const localStorageCount = ref(0)
 const sessionStorageCount = ref(0)
 const cacheStorageCount = ref(0)
+const activeTab = ref<'apiKeys' | 'cache' | 'runtime'>('apiKeys')
+const tabs = [
+  { id: 'apiKeys', label: 'API Key' },
+  { id: 'cache', label: '本地缓存' },
+  { id: 'runtime', label: '运行信息' }
+] as const
 
 const backendBase = computed(() => `${window.location.origin}/api`)
 const appVersion = computed(() => import.meta.env.VITE_APP_VERSION || 'dev')
@@ -119,37 +87,6 @@ const baseUrl = computed(() => import.meta.env.BASE_URL || '/')
 const cacheSummary = computed(() => {
   return `localStorage ${localStorageCount.value} 项，sessionStorage ${sessionStorageCount.value} 项，Cache ${cacheStorageCount.value} 项`
 })
-
-function loadPreferences() {
-  try {
-    const raw = window.localStorage.getItem(preferenceKey)
-    if (!raw) {
-      return
-    }
-
-    const parsed = JSON.parse(raw) as Partial<UiPreferences>
-    preferences.compactList = Boolean(parsed.compactList)
-    preferences.openInboxInNewTab = parsed.openInboxInNewTab !== false
-    preferences.refreshInterval = Number(parsed.refreshInterval) || 0
-  } catch {
-    window.localStorage.removeItem(preferenceKey)
-  }
-}
-
-function savePreferences() {
-  savedMessage.value = ''
-  cacheMessage.value = ''
-
-  const payload: UiPreferences = {
-    compactList: preferences.compactList,
-    openInboxInNewTab: preferences.openInboxInNewTab,
-    refreshInterval: preferences.refreshInterval
-  }
-
-  window.localStorage.setItem(preferenceKey, JSON.stringify(payload))
-  savedMessage.value = '本地 UI 偏好已保存。'
-  refreshCacheState()
-}
 
 async function refreshCacheState() {
   localStorageCount.value = window.localStorage.length
@@ -167,7 +104,7 @@ async function refreshCacheState() {
 async function clearLocalCache() {
   dialog.warning({
     title: '清理本地缓存',
-    content: '确认清理本地缓存？本地 UI 偏好也会重置。',
+    content: '确认清理 localStorage、sessionStorage 和 Cache？清理后需要重新登录。',
     positiveText: '确认清理',
     negativeText: '取消',
     onPositiveClick: async () => {
@@ -179,8 +116,6 @@ async function clearLocalCache() {
         await Promise.all(keys.map((key) => window.caches.delete(key)))
       }
 
-      Object.assign(preferences, defaultPreferences)
-      savedMessage.value = ''
       cacheMessage.value = '本地缓存已清理。'
       await refreshCacheState()
       message.success('本地缓存已清理')
@@ -189,7 +124,6 @@ async function clearLocalCache() {
 }
 
 onMounted(async () => {
-  loadPreferences()
   await refreshCacheState()
 })
 </script>
@@ -197,12 +131,10 @@ onMounted(async () => {
 <style scoped>
 .settings-page {
   display: grid;
-  gap: 20px;
+  gap: 12px;
 }
 
 .page-header,
-.settings-grid,
-.setting-row,
 .cache-actions {
   display: flex;
   align-items: center;
@@ -221,8 +153,7 @@ onMounted(async () => {
 }
 
 .page-header h1 {
-  margin-top: 12px;
-  font-size: clamp(28px, 4vw, 40px);
+  font-size: 22px;
 }
 
 .page-header p,
@@ -230,17 +161,45 @@ onMounted(async () => {
   margin: 8px 0 0;
 }
 
-.settings-grid {
-  align-items: stretch;
-  gap: 16px;
-}
-
 .section-panel {
   display: grid;
   flex: 1;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
-  padding: 20px;
+  padding: 16px;
+}
+
+.settings-tabs {
+  position: sticky;
+  top: 76px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.tab-button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tab-button:hover,
+.tab-button--active {
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+  color: var(--text-strong);
 }
 
 .panel-heading {
@@ -253,51 +212,20 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.setting-row {
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 64px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.setting-row:last-of-type {
-  border-bottom: 0;
-}
-
-.setting-row strong {
-  display: block;
-  color: var(--text-strong);
-}
-
-.setting-row small {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.setting-row input[type='checkbox'] {
-  width: 22px;
-  height: 22px;
-  accent-color: var(--accent);
-}
-
-.field-group {
-  display: grid;
-  gap: 8px;
-}
-
 .info-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   margin: 0;
+}
+
+.info-list--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .info-list div {
   display: grid;
-  gap: 6px;
-  padding: 12px;
+  gap: 4px;
+  padding: 10px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-panel-muted);
@@ -337,10 +265,12 @@ onMounted(async () => {
 }
 
 @media (max-width: 860px) {
-  .settings-grid,
-  .setting-row {
-    flex-direction: column;
-    align-items: stretch;
+  .settings-tabs {
+    top: 68px;
+  }
+
+  .info-list--compact {
+    grid-template-columns: 1fr;
   }
 }
 </style>

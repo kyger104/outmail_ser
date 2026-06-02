@@ -32,16 +32,26 @@ describe('extractCode', () => {
 
 describe('parseMailboxImport', () => {
   it('parses multiple supported separators and reports invalid lines', () => {
-    const result = parseMailboxImport('a@example.com:tok1\nbad line\nb@example.com----tok2\nc@example.com|tok3')
+    const result = parseMailboxImport('a@example.com:tok1\nbad line\nb@example.com----tok2\nc@example.com|tok3\nd@example.com----pass----client-id----tok4')
 
     expect(result.valid).toEqual([
       { line: 1, email: 'a@example.com', imap_token: 'tok1' },
       { line: 3, email: 'b@example.com', imap_token: 'tok2' },
-      { line: 4, email: 'c@example.com', imap_token: 'tok3' }
+      { line: 4, email: 'c@example.com', imap_token: 'tok3' },
+      { line: 5, email: 'd@example.com', imap_token: 'tok4' }
     ])
     expect(result.invalid).toEqual([
       { line: 2, raw: 'bad line', reason: '无法识别邮箱和令牌分隔符' }
     ])
+  })
+
+  it('uses the fourth field as token for account password id token imports', () => {
+    const result = parseMailboxImport('user@hotmail.com----password----9e5f94bc-id----M.C552.token$$')
+
+    expect(result.valid).toEqual([
+      { line: 1, email: 'user@hotmail.com', imap_token: 'M.C552.token$$' }
+    ])
+    expect(result.invalid).toEqual([])
   })
 })
 

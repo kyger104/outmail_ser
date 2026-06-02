@@ -15,10 +15,10 @@ const router = createRouter({
       component: MainLayout,
       meta: { requiresAdmin: true },
       children: [
-        { path: '', name: 'Dashboard', component: () => import('../views/Dashboard.vue') },
+        { path: '', redirect: '/admin' },
         { path: 'admin', name: 'Admin', component: () => import('../views/Admin.vue') },
         { path: 'import', name: 'Import', component: () => import('../views/Import.vue') },
-        { path: 'api-keys', name: 'ApiKeys', component: () => import('../views/ApiKeys.vue') },
+        { path: 'api-keys', redirect: '/settings' },
         { path: 'stats', name: 'Stats', component: () => import('../views/Stats.vue') },
         { path: 'settings', name: 'Settings', component: () => import('../views/Settings.vue') }
       ]

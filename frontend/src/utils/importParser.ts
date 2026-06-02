@@ -18,6 +18,23 @@ export interface MailboxImportParseResult {
 const separators = ['----', '|', ':']
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+function splitMailboxLine(raw: string, separator: string) {
+  const parts = raw.split(separator).map((part) => part.trim())
+
+  if (separator === '----' && parts.length >= 4) {
+    return {
+      email: parts[0] ?? '',
+      imapToken: parts.slice(3).join(separator).trim()
+    }
+  }
+
+  const [emailPart, ...tokenParts] = parts
+  return {
+    email: emailPart ?? '',
+    imapToken: tokenParts.join(separator).trim()
+  }
+}
+
 export function parseMailboxImport(input: string): MailboxImportParseResult {
   const valid: ParsedMailboxImport[] = []
   const invalid: InvalidMailboxImport[] = []
@@ -36,9 +53,7 @@ export function parseMailboxImport(input: string): MailboxImportParseResult {
       return
     }
 
-    const [emailPart, ...tokenParts] = raw.split(separator)
-    const email = emailPart?.trim() ?? ''
-    const imapToken = tokenParts.join(separator).trim()
+    const { email, imapToken } = splitMailboxLine(raw, separator)
 
     if (!emailPattern.test(email)) {
       invalid.push({ line: lineNumber, raw, reason: '邮箱格式不正确' })

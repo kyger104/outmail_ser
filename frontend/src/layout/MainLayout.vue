@@ -6,9 +6,7 @@ import {
   BarChart3,
   Database,
   Download,
-  Home,
   Inbox,
-  KeyRound,
   LogOut,
   Mail,
   Menu,
@@ -37,10 +35,8 @@ const errorCount = ref(0)
 const { themeMode, resolvedTheme, setThemeMode } = useThemeControls()
 
 const navItems = [
-  { name: 'Dashboard', label: '控制台', path: '/', icon: Home },
   { name: 'Admin', label: '邮箱管理', path: '/admin', icon: Database },
   { name: 'Import', label: '批量导入', path: '/import', icon: Upload },
-  { name: 'ApiKeys', label: 'API Keys', path: '/api-keys', icon: KeyRound },
   { name: 'Stats', label: '统计数据', path: '/stats', icon: BarChart3 },
   { name: 'Settings', label: '系统设置', path: '/settings', icon: Settings }
 ]
@@ -152,7 +148,6 @@ onMounted(() => {
             <Menu :size="18" />
           </button>
           <div class="topbar-copy">
-            <div class="kicker">邮箱管理</div>
             <div class="topbar-title">{{ currentTitle }}</div>
           </div>
         </div>
@@ -225,8 +220,8 @@ onMounted(() => {
 .workspace-shell {
   display: flex;
   min-height: 100vh;
-  gap: 18px;
-  padding: 18px;
+  gap: 14px;
+  padding: 14px;
 }
 
 .workspace-sidebar {
@@ -371,24 +366,28 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .workspace-topbar {
-  min-height: 92px;
-  padding: 18px 22px;
-  border-radius: var(--radius-xl);
+  position: sticky;
+  top: 14px;
+  z-index: 20;
+  min-height: 60px;
+  padding: 8px 14px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
+  backdrop-filter: blur(14px);
 }
 
 .topbar-start,
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .topbar-actions {
@@ -399,12 +398,12 @@ onMounted(() => {
 .topbar-copy {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .topbar-title {
   color: var(--text-strong);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
 }
 
@@ -412,7 +411,8 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
   background: var(--bg-success-soft);
@@ -491,7 +491,7 @@ onMounted(() => {
 
 @media (max-width: 1100px) {
   .workspace-shell {
-    padding: 14px;
+    padding: 10px;
   }
 
   .workspace-sidebar {
@@ -499,7 +499,9 @@ onMounted(() => {
   }
 
   .workspace-topbar {
-    padding: 16px;
+    top: 10px;
+    min-height: 56px;
+    padding: 8px 10px;
   }
 
   .mobile-only {
@@ -513,14 +515,13 @@ onMounted(() => {
 
 @media (max-width: 720px) {
   .workspace-shell {
-    padding: 10px;
+    padding: 8px;
     gap: 10px;
   }
 
   .workspace-topbar {
-    min-height: 78px;
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
   }
 }
 </style>

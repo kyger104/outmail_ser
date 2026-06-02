@@ -1,23 +1,25 @@
 <template>
-  <main class="page-shell utility-page">
-    <header class="page-header">
+  <section class="shell-card api-keys-panel">
+    <header class="panel-top">
       <div>
-        <span class="kicker">API Keys</span>
-        <h1>API Key 管理</h1>
-        <p class="muted-copy">
-          使用当前控制台登录态管理外部调用凭据。
-        </p>
+        <h2>API Key</h2>
+        <p class="muted-copy">外部调用凭据，默认收起创建表单。</p>
       </div>
-      <button class="ghost-button" type="button" :disabled="loading" @click="loadKeys">
-        {{ loading ? '加载中...' : '刷新列表' }}
-      </button>
+      <div class="panel-actions">
+        <button class="ghost-button compact-button" type="button" :disabled="loading" @click="loadKeys">
+          {{ loading ? '加载中' : '刷新' }}
+        </button>
+        <button class="action-button compact-button" type="button" @click="showCreate = !showCreate">
+          {{ showCreate ? '收起' : '新建 Key' }}
+        </button>
+      </div>
     </header>
 
-    <section class="utility-grid">
-      <form class="shell-card form-panel" @submit.prevent="createKey">
+    <form v-if="showCreate" class="form-panel" @submit.prevent="createKey">
+      <div class="form-grid">
         <div class="panel-heading">
           <h2>创建 Key</h2>
-          <p>rate_limit 为 0 表示不限制。</p>
+          <p>Rate limit 为 0 表示不限制。</p>
         </div>
 
         <label class="field-group">
@@ -45,19 +47,18 @@
           <span class="field-label">Rate limit</span>
           <input v-model.number="createForm.rate_limit" class="field-input" min="0" step="1" type="number">
         </label>
+      </div>
 
-        <button class="action-button" type="submit" :disabled="!canCreate || creating">
-          {{ creating ? '创建中...' : '创建 API Key' }}
-        </button>
-      </form>
-    </section>
+      <button class="action-button compact-button form-submit" type="submit" :disabled="!canCreate || creating">
+        {{ creating ? '创建中...' : '创建 API Key' }}
+      </button>
+    </form>
 
     <p v-if="errorMessage" class="feedback feedback--error" role="alert">{{ errorMessage }}</p>
     <p v-if="successMessage" class="feedback feedback--success" role="status">{{ successMessage }}</p>
 
-    <section v-if="createdKey" class="shell-card created-panel">
+    <section v-if="createdKey" class="created-panel">
       <div>
-        <span class="kicker">New Key</span>
         <h2>{{ createdKey.name }}</h2>
         <p class="muted-copy">新 Key 已生成，请及时复制保存。</p>
       </div>
@@ -65,7 +66,7 @@
       <button class="ghost-button" type="button" @click="copyKey(createdKey.api_key)">复制 Key</button>
     </section>
 
-    <section class="shell-card list-panel">
+    <section class="list-panel">
       <div class="panel-heading list-heading">
         <div>
           <h2>Key 列表</h2>
@@ -135,7 +136,7 @@
         </article>
       </div>
     </section>
-  </main>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -173,6 +174,7 @@ const dialog = useDialog()
 const errorMessage = ref('')
 const successMessage = ref('')
 const createdKey = ref<ApiKeyItem | null>(null)
+const showCreate = ref(false)
 
 const canCreate = computed(() => createForm.name.length > 0 && createForm.rate_limit >= 0)
 const activeCount = computed(() => keys.value.filter((item) => item.is_active).length)
@@ -230,6 +232,7 @@ async function createKey() {
     createForm.name = ''
     createForm.description = ''
     createForm.rate_limit = 0
+    showCreate.value = false
     successMessage.value = 'API Key 创建成功。'
     await loadKeys()
   } catch (error) {
@@ -309,13 +312,14 @@ onMounted(loadKeys)
 </script>
 
 <style scoped>
-.utility-page {
+.api-keys-panel {
   display: grid;
-  gap: 20px;
+  gap: 10px;
+  padding: 12px;
 }
 
-.page-header,
-.utility-grid,
+.panel-top,
+.panel-actions,
 .created-panel,
 .list-heading,
 .key-row,
@@ -325,12 +329,14 @@ onMounted(loadKeys)
   align-items: center;
 }
 
-.page-header {
+.panel-top {
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.page-header h1,
+.panel-top h2,
 .panel-heading h2,
 .created-panel h2,
 .key-title h3,
@@ -340,30 +346,36 @@ onMounted(loadKeys)
   letter-spacing: 0;
 }
 
-.page-header h1 {
-  margin-top: 12px;
-  font-size: clamp(28px, 4vw, 40px);
+.panel-top h2 {
+  font-size: 17px;
 }
 
-.page-header p,
+.panel-top p,
 .panel-heading p,
 .created-panel p,
 .key-main p,
 .empty-panel p {
-  margin: 8px 0 0;
-}
-
-.utility-grid {
-  align-items: stretch;
-  gap: 16px;
+  margin: 4px 0 0;
 }
 
 .form-panel {
   display: grid;
-  flex: 1;
-  gap: 16px;
-  min-width: 0;
-  padding: 20px;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-muted);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.5fr) minmax(180px, 0.8fr) minmax(240px, 1fr) minmax(120px, 0.4fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.form-submit {
+  justify-self: start;
 }
 
 .panel-heading {
@@ -378,17 +390,28 @@ onMounted(loadKeys)
 
 .field-group {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .compact-textarea {
-  min-height: 92px;
+  min-height: 42px;
+  resize: vertical;
+}
+
+.compact-button,
+.row-actions > button {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .feedback {
   margin: 0;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -406,8 +429,11 @@ onMounted(loadKeys)
 
 .created-panel {
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  background: var(--bg-accent-soft);
 }
 
 .created-panel code,
@@ -420,11 +446,13 @@ onMounted(loadKeys)
 
 .list-panel {
   overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
 }
 
 .list-heading {
   justify-content: space-between;
-  padding: 20px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -434,8 +462,8 @@ onMounted(loadKeys)
 
 .key-row {
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 20px;
+  gap: 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -445,7 +473,7 @@ onMounted(loadKeys)
 
 .key-main {
   display: grid;
-  gap: 8px;
+  gap: 5px;
   min-width: 220px;
   flex: 1.1;
 }
@@ -457,14 +485,14 @@ onMounted(loadKeys)
 }
 
 .key-title h3 {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .key-meta {
   display: grid;
-  grid-template-columns: repeat(2, minmax(110px, 1fr));
-  gap: 12px 18px;
-  min-width: 320px;
+  grid-template-columns: repeat(4, minmax(92px, 1fr));
+  gap: 8px;
+  min-width: 430px;
   margin: 0;
 }
 
@@ -488,7 +516,7 @@ onMounted(loadKeys)
 .row-actions {
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 button:disabled {
@@ -497,8 +525,11 @@ button:disabled {
   transform: none;
 }
 
-@media (max-width: 980px) {
-  .utility-grid,
+@media (max-width: 1100px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .created-panel,
   .key-row {
     flex-direction: column;
@@ -511,11 +542,12 @@ button:disabled {
 }
 
 @media (max-width: 640px) {
-  .page-header {
+  .panel-top {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .form-grid,
   .key-meta {
     grid-template-columns: 1fr;
   }
